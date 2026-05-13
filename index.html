@@ -6,7 +6,6 @@
 <title>Blake Hydraulics Sales Tracker</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<!-- Supabase JS client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -14,7 +13,7 @@
   --bg-primary:#ffffff;--bg-secondary:#f5f7fa;--bg-tertiary:#eef1f6;
   --text-primary:#111827;--text-secondary:#6b7280;--text-tertiary:#9ca3af;
   --border-light:rgba(0,0,0,0.09);--border-mid:rgba(0,0,0,0.16);
-  --accent:#1d4ed8;--accent-light:#eff6ff;
+  --accent:#1d4ed8;
   --success-bg:#f0fdf4;--success-text:#166534;--success-border:#bbf7d0;
   --warn-bg:#fffbeb;--warn-text:#92400e;--warn-border:#fde68a;
   --danger-bg:#fef2f2;--danger-text:#991b1b;--danger-border:#fecaca;
@@ -27,7 +26,7 @@
   --bg-primary:#1a1a1a;--bg-secondary:#242424;--bg-tertiary:#2e2e2e;
   --text-primary:#f3f4f6;--text-secondary:#9ca3af;--text-tertiary:#6b7280;
   --border-light:rgba(255,255,255,0.07);--border-mid:rgba(255,255,255,0.14);
-  --accent:#3b82f6;--accent-light:#1e3a5f;
+  --accent:#3b82f6;
   --success-bg:#052e16;--success-text:#86efac;--success-border:#166534;
   --warn-bg:#2d1a00;--warn-text:#fcd34d;--warn-border:#92400e;
   --danger-bg:#2d0a0a;--danger-text:#fca5a5;--danger-border:#991b1b;
@@ -36,8 +35,6 @@
   --teal-bg:#042f2e;--teal-text:#5eead4;
 }}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:var(--bg-tertiary);color:var(--text-primary);min-height:100vh}
-
-/* ── LOGIN ── */
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
 .login-card{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);padding:2.5rem;width:360px;max-width:100%;box-shadow:0 4px 24px rgba(0,0,0,.08)}
 .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
@@ -46,23 +43,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .login-card h3{font-size:20px;font-weight:600;margin-bottom:4px}
 .login-sub{font-size:13px;color:var(--text-secondary);margin-bottom:1.5rem}
 .login-error{background:var(--danger-bg);color:var(--danger-text);border:0.5px solid var(--danger-border);border-radius:var(--radius-md);padding:9px 12px;font-size:12px;margin-bottom:14px;display:none}
-.login-spinner{display:none;text-align:center;padding:8px 0;font-size:12px;color:var(--text-secondary)}
-
-/* ── SHELL ── */
-.shell{max-width:1120px;margin:0 auto;padding:24px 20px}
+.shell{max-width:1160px;margin:0 auto;padding:24px 20px}
 .header{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
 .brand{display:flex;align-items:center;gap:10px}
 .brand-name{font-size:16px;font-weight:600}
 .brand-name span{font-weight:400;color:var(--text-secondary)}
 .topbar-user{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.topbar-name{font-size:13px;font-weight:500}
 .role-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:500}
 .pill-super{background:var(--purple-bg);color:var(--purple-text)}
 .pill-admin{background:var(--teal-bg);color:var(--teal-text)}
 .pill-rep{background:var(--bg-secondary);color:var(--text-secondary);border:0.5px solid var(--border-light)}
 .card{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);padding:20px}
 .tabs{display:flex;gap:2px;border-bottom:0.5px solid var(--border-light);margin-bottom:20px;flex-wrap:wrap}
-.tab{padding:9px 14px;font-size:13px;font-weight:500;border:none;background:none;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:0;display:inline-flex;align-items:center;gap:6px;transition:color .15s}
+.tab{padding:9px 13px;font-size:13px;font-weight:500;border:none;background:none;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:0;display:inline-flex;align-items:center;gap:6px;transition:color .15s}
 .tab:hover{color:var(--text-primary)}
 .tab.active{color:var(--text-primary);border-bottom-color:var(--accent)}
 .panel{display:none}.panel.active{display:block}
@@ -71,13 +64,12 @@ select,input,textarea{background:var(--bg-primary);color:var(--text-primary);bor
 select:focus,input:focus,textarea:focus{border-color:var(--accent)}
 select{height:32px;cursor:pointer}
 input[type=text],input[type=email],input[type=password],input[type=number],input[type=date]{height:34px}
-.toolbar input{width:175px}.toolbar select{height:32px}
+.toolbar input{width:170px}.toolbar select{height:32px}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid var(--border-mid);border-radius:var(--radius-md);background:var(--bg-primary);color:var(--text-primary);transition:background .15s;font-family:inherit}
 .btn:hover{background:var(--bg-secondary)}
 .btn.primary{background:var(--accent);color:#fff;border-color:transparent}
 .btn.primary:hover{opacity:.88}
 .btn.success{background:var(--success-bg);color:var(--success-text);border-color:var(--success-border)}
-.btn.success:hover{opacity:.88}
 .btn.danger{background:var(--danger-bg);color:var(--danger-text);border-color:var(--danger-border)}
 .btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
 .tbl-wrap{overflow-x:auto;border:0.5px solid var(--border-light);border-radius:var(--radius-lg)}
@@ -88,13 +80,10 @@ td{padding:10px;border-bottom:0.5px solid var(--border-light);color:var(--text-p
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--bg-secondary)}
 .badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:500}
-.b-blue{background:var(--info-bg);color:var(--info-text)}
-.b-green{background:var(--success-bg);color:var(--success-text)}
-.b-amber{background:var(--warn-bg);color:var(--warn-text)}
-.b-coral{background:var(--danger-bg);color:var(--danger-text)}
+.b-blue{background:var(--info-bg);color:var(--info-text)}.b-green{background:var(--success-bg);color:var(--success-text)}
+.b-amber{background:var(--warn-bg);color:var(--warn-text)}.b-coral{background:var(--danger-bg);color:var(--danger-text)}
 .b-gray{background:var(--bg-secondary);color:var(--text-secondary);border:0.5px solid var(--border-light)}
-.b-purple{background:var(--purple-bg);color:var(--purple-text)}
-.b-teal{background:var(--teal-bg);color:var(--teal-text)}
+.b-purple{background:var(--purple-bg);color:var(--purple-text)}.b-teal{background:var(--teal-bg);color:var(--teal-text)}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
 .kpi{background:var(--bg-secondary);border-radius:var(--radius-md);padding:14px 16px}
 .kpi-label{font-size:11px;color:var(--text-secondary);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.03em}
@@ -107,8 +96,7 @@ tr:hover td{background:var(--bg-secondary)}
 .user-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .user-card{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);padding:16px;display:flex;align-items:center;gap:12px}
 .avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0}
-.user-info-block{flex:1;min-width:0}
-.user-name{font-size:14px;font-weight:500}
+.user-info-block{flex:1;min-width:0}.user-name{font-size:14px;font-weight:500}
 .user-meta{font-size:12px;color:var(--text-secondary);margin-top:2px}
 .user-actions{display:flex;gap:6px;flex-shrink:0}
 .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:var(--radius-md);border:0.5px solid var(--border-light);background:none;cursor:pointer;color:var(--text-secondary);font-size:15px;transition:all .15s}
@@ -117,7 +105,7 @@ tr:hover td{background:var(--bg-secondary)}
 .icon-btn:disabled{opacity:.28;cursor:not-allowed;pointer-events:none}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
 .modal-overlay.open{display:flex}
-.modal{background:var(--bg-primary);border:0.5px solid var(--border-mid);border-radius:var(--radius-lg);padding:24px;width:520px;max-width:100%;max-height:90vh;overflow-y:auto}
+.modal{background:var(--bg-primary);border:0.5px solid var(--border-mid);border-radius:var(--radius-lg);padding:24px;width:540px;max-width:100%;max-height:90vh;overflow-y:auto}
 .modal h3{font-size:16px;font-weight:600;margin-bottom:16px}
 .form-row{margin-bottom:12px}
 .form-row label{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;font-weight:500}
@@ -137,8 +125,7 @@ tr:hover td{background:var(--bg-secondary)}
 .target-strip-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px}
 .target-strip-name{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
 .target-strip-pcts{display:flex;gap:16px}
-.target-pct{text-align:center}
-.target-pct-val{font-size:16px;font-weight:500}
+.target-pct{text-align:center}.target-pct-val{font-size:16px;font-weight:500}
 .target-pct-label{font-size:10px;color:var(--text-secondary);text-transform:uppercase}
 .fc-rep-card{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);padding:18px;margin-bottom:14px}
 .fc-targets{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
@@ -149,24 +136,42 @@ tr:hover td{background:var(--bg-secondary)}
 .admin-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:99px;background:var(--purple-bg);color:var(--purple-text)}
 .locked-box{background:var(--bg-secondary);border:0.5px solid var(--border-light);border-radius:var(--radius-md);padding:10px 14px;display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:var(--text-secondary)}
 .good{color:#166534}.mid{color:#92400e}.low{color:#991b1b}
-.loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;z-index:2000;display:none}
+.loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;z-index:2000}
 .loading-box{background:var(--bg-primary);border-radius:var(--radius-lg);padding:20px 32px;font-size:14px;color:var(--text-secondary);display:flex;align-items:center;gap:10px}
 .spinner{width:18px;height:18px;border:2px solid var(--border-mid);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:var(--radius-md);font-size:13px;font-weight:500;color:#fff;z-index:3000;display:none;box-shadow:0 4px 16px rgba(0,0,0,.2)}
-.toast.show{display:block}
-.toast.ok{background:#166534}.toast.err{background:#991b1b}
-@media(max-width:640px){.two-col{grid-template-columns:1fr}.form-2{grid-template-columns:1fr}.shell{padding:12px}.fc-targets{grid-template-columns:1fr}}
+.toast.show{display:block}.toast.ok{background:#166534}.toast.err{background:#991b1b}
+
+/* ── DEALS ── */
+.deals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.deal-card{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .15s}
+.deal-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.deal-card-top{padding:16px}
+.deal-card-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:8px}
+.deal-opp{font-size:13px;font-weight:600;line-height:1.3;color:var(--text-primary)}
+.deal-meta{font-size:12px;color:var(--text-secondary);margin-bottom:10px}
+.deal-stats{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.deal-val{font-size:16px;font-weight:600}
+.deal-card-body{padding:14px 16px;flex:1;background:var(--bg-secondary);border-top:0.5px solid var(--border-light)}
+.deal-card-footer{padding:10px 16px;border-top:0.5px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:var(--bg-primary)}
+.quote-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:6px;font-size:12px}
+.quote-item-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.quote-item-date{font-size:11px;color:var(--text-secondary);flex-shrink:0;white-space:nowrap}
+.upload-zone{border:1.5px dashed var(--border-mid);border-radius:var(--radius-md);padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg-primary);margin-top:8px}
+.upload-zone:hover{border-color:var(--accent);background:var(--info-bg)}
+.upload-zone input[type=file]{display:none}
+.prog-bar{height:4px;background:var(--bg-tertiary);border-radius:2px;overflow:hidden;margin-top:6px;display:none}
+.prog-fill{height:4px;background:var(--accent);transition:width .15s}
+.close-tag{font-size:11px;white-space:nowrap}
+.overdue{color:var(--danger-text);font-weight:600}
+.due-soon{color:var(--warn-text);font-weight:500}
+@media(max-width:640px){.two-col{grid-template-columns:1fr}.form-2{grid-template-columns:1fr}.shell{padding:12px}.fc-targets{grid-template-columns:1fr}.deals-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<!-- LOADING OVERLAY -->
-<div class="loading-overlay" id="loading-overlay">
-  <div class="loading-box"><div class="spinner"></div><span id="loading-msg">Loading…</span></div>
-</div>
-
-<!-- TOAST -->
+<div class="loading-overlay" id="loading-overlay"><div class="loading-box"><div class="spinner"></div><span id="loading-msg">Loading…</span></div></div>
 <div class="toast" id="toast"></div>
 
 <!-- LOGIN -->
@@ -182,8 +187,7 @@ tr:hover td{background:var(--bg-secondary)}
       <div class="login-error" id="login-error">Incorrect username or password.</div>
       <div class="form-row"><label>Username</label><input type="text" id="login-user" placeholder="e.g. jeff.hancox" autocomplete="username"></div>
       <div class="form-row"><label>Password</label><input type="password" id="login-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-      <div class="login-spinner" id="login-spinner"><div class="spinner" style="margin:0 auto"></div></div>
-      <button class="btn primary" style="width:100%;margin-top:4px;justify-content:center" onclick="doLogin()"><i class="ti ti-login"></i> Sign in</button>
+      <button class="btn primary" style="width:100%;margin-top:4px;justify-content:center" id="login-btn" onclick="doLogin()"><i class="ti ti-login"></i> Sign in</button>
     </div>
   </div>
 </div>
@@ -197,7 +201,7 @@ tr:hover td{background:var(--bg-secondary)}
       <div class="brand-name">Blake Hydraulics <span>Sales Tracker</span></div>
     </div>
     <div class="topbar-user">
-      <span class="topbar-name" id="topbar-name"></span>
+      <span style="font-size:13px;font-weight:500" id="topbar-name"></span>
       <span class="role-pill" id="topbar-role"></span>
       <button class="btn" style="font-size:12px" onclick="doLogout()"><i class="ti ti-logout"></i> Sign out</button>
     </div>
@@ -206,15 +210,17 @@ tr:hover td{background:var(--bg-secondary)}
   <div class="card">
     <div class="tabs">
       <button class="tab active" onclick="switchTab('dashboard')"><i class="ti ti-chart-bar"></i> Dashboard</button>
+      <button class="tab" onclick="switchTab('deals')"><i class="ti ti-file-invoice"></i> Deals</button>
       <button class="tab" onclick="switchTab('forecast')"><i class="ti ti-target"></i> Forecast</button>
       <button class="tab" onclick="switchTab('eod')"><i class="ti ti-file-text"></i> EOD report</button>
       <button class="tab" onclick="switchTab('conversion')"><i class="ti ti-trending-up"></i> Conversion</button>
       <button class="tab" onclick="switchTab('activity')"><i class="ti ti-calendar"></i> Activity log</button>
       <button class="tab" onclick="switchTab('pipeline')"><i class="ti ti-arrow-right"></i> Pipeline</button>
-      <button class="tab" id="tab-users-btn" onclick="switchTab('users')" style="display:none"><i class="ti ti-shield-lock"></i> Users</button>
+      <button class="tab" id="tab-users-btn" style="display:none" onclick="switchTab('users')"><i class="ti ti-shield-lock"></i> Users</button>
     </div>
 
     <div id="tab-dashboard" class="panel active"><div id="dash-content"></div></div>
+    <div id="tab-deals" class="panel"><div id="deals-content"></div></div>
     <div id="tab-forecast" class="panel"><div id="fc-content"></div></div>
     <div id="tab-eod" class="panel"><div id="eod-content"></div></div>
     <div id="tab-conversion" class="panel"><div id="conv-content"></div></div>
@@ -227,8 +233,8 @@ tr:hover td{background:var(--bg-secondary)}
         <button class="btn primary" onclick="openModal('activity')"><i class="ti ti-plus"></i> Log activity</button>
       </div>
       <div class="tbl-wrap"><table>
-        <colgroup><col style="width:90px"><col style="width:112px"><col style="width:130px"><col style="width:140px"><col style="width:96px"><col style="width:168px"><col style="width:60px"><col style="width:88px"><col style="width:88px"><col style="width:152px"></colgroup>
-        <thead><tr><th>Date</th><th>Rep</th><th>Customer</th><th>Company</th><th>Type</th><th>Purpose</th><th>Mins</th><th>Follow-up?</th><th>F/U date</th><th>Outcome</th></tr></thead>
+        <colgroup><col style="width:88px"><col style="width:108px"><col style="width:120px"><col style="width:130px"><col style="width:90px"><col style="width:155px"><col style="width:54px"><col style="width:82px"><col style="width:82px"><col style="width:140px"><col style="width:36px"></colgroup>
+        <thead><tr><th>Date</th><th>Rep</th><th>Customer</th><th>Company</th><th>Type</th><th>Purpose</th><th>Mins</th><th>Follow-up?</th><th>F/U date</th><th>Outcome</th><th></th></tr></thead>
         <tbody id="act-body"></tbody>
       </table></div>
     </div>
@@ -242,8 +248,8 @@ tr:hover td{background:var(--bg-secondary)}
         <span id="pipe-lock-notice" class="lock-notice" style="display:none"><i class="ti ti-lock"></i> Only admins can delete deals</span>
       </div>
       <div class="tbl-wrap"><table>
-        <colgroup><col style="width:94px"><col style="width:122px"><col style="width:132px"><col style="width:158px"><col style="width:102px"><col style="width:100px"><col style="width:64px"><col style="width:106px"><col style="width:88px"><col style="width:74px"><col style="width:36px"></colgroup>
-        <thead><tr><th>Rep</th><th>Customer</th><th>Company</th><th>Opportunity</th><th>Stage</th><th>Value (R)</th><th>Prob %</th><th>Weighted (R)</th><th>Close date</th><th>Status</th><th></th></tr></thead>
+        <colgroup><col style="width:90px"><col style="width:112px"><col style="width:124px"><col style="width:148px"><col style="width:98px"><col style="width:94px"><col style="width:60px"><col style="width:98px"><col style="width:84px"><col style="width:68px"><col style="width:76px"><col style="width:34px"></colgroup>
+        <thead><tr><th>Rep</th><th>Customer</th><th>Company</th><th>Opportunity</th><th>Stage</th><th>Value (R)</th><th>Prob %</th><th>Weighted (R)</th><th>Close date</th><th>Status</th><th>Quotes</th><th></th></tr></thead>
         <tbody id="pipe-body"></tbody>
       </table></div>
       <div class="pipe-footer">
@@ -258,7 +264,6 @@ tr:hover td{background:var(--bg-secondary)}
 </div>
 </div>
 
-<!-- MODAL -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeMO(event)">
   <div class="modal">
     <h3 id="modal-title"></h3>
@@ -274,8 +279,9 @@ tr:hover td{background:var(--bg-secondary)}
 // ═══════════════════════════════════════════════════════════════
 // CONFIGURATION — replace with your Supabase project details
 // ═══════════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://edoydkllhewebzzesiik.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_1wvKXathwO2zXAo46XcxKQ_6BZBAlLW';
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const STORAGE_BUCKET = 'quotes'; // Supabase Storage bucket name
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ═══════════════════════════════════════════════════════════════
@@ -293,12 +299,8 @@ const AV_TX=["#1e40af","#166534","#92400e","#991b1b"];
 // STATE
 // ═══════════════════════════════════════════════════════════════
 let currentUser=null;
-let users=[];
-let activities=[];
-let deals=[];
-let forecasts={};
-let modalMode='';
-let targetId=null;
+let users=[], activities=[], deals=[], quotes=[], forecasts={};
+let modalMode='', targetId=null;
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -324,31 +326,34 @@ const roleLabel=r=>r==='super_admin'?'Super Admin':r==='admin'?'Admin':'Rep';
 const g=id=>document.getElementById(id)?.value||'';
 const wonForRepMonth=(rn,mk)=>deals.filter(d=>d.rep===rn&&d.status==='Won'&&d.close?.startsWith(mk)).reduce((s,d)=>s+d.value,0);
 const weightedForRep=rn=>deals.filter(d=>d.rep===rn&&d.status==='Active').reduce((s,d)=>s+d.value*d.prob/100,0);
+const quotesForDeal=dealId=>quotes.filter(q=>q.deal_id===dealId);
+const daysUntil=d=>{if(!d)return null;return Math.ceil((new Date(d)-new Date(today()))/86400000)};
 
-function getFC(repName,mk){
-  if(!forecasts[repName])forecasts[repName]={};
-  if(!forecasts[repName][mk])forecasts[repName][mk]={won_target:0,weighted_target:0,notes:'',submitted:false,submitted_at:null,admin_override:false};
-  return forecasts[repName][mk];
+function getFC(rn,mk){
+  if(!forecasts[rn])forecasts[rn]={};
+  if(!forecasts[rn][mk])forecasts[rn][mk]={won_target:0,weighted_target:0,notes:'',submitted:false,submitted_at:null,admin_override:false};
+  return forecasts[rn][mk];
 }
 
-// ── UI HELPERS ─────────────────────────────────────────────────
+// ── UI ─────────────────────────────────────────────────────────
 function showLoading(msg='Loading…'){document.getElementById('loading-msg').textContent=msg;document.getElementById('loading-overlay').style.display='flex';}
 function hideLoading(){document.getElementById('loading-overlay').style.display='none';}
-function toast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast show ${type}`;setTimeout(()=>t.classList.remove('show'),3000);}
+function toast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast show ${type}`;setTimeout(()=>t.classList.remove('show'),3200);}
 
 // ═══════════════════════════════════════════════════════════════
-// SUPABASE DATA LAYER
+// DATA LAYER
 // ═══════════════════════════════════════════════════════════════
 async function loadAllData(){
   showLoading('Loading data…');
   try{
-    const[{data:u},{data:a},{data:d},{data:f}]=await Promise.all([
+    const[{data:u},{data:a},{data:d},{data:q},{data:f}]=await Promise.all([
       sb.from('users').select('*').order('name'),
       sb.from('activities').select('*').order('date',{ascending:false}),
       sb.from('deals').select('*').order('created_at',{ascending:false}),
+      sb.from('quotes').select('*').order('uploaded_at',{ascending:false}),
       sb.from('forecasts').select('*'),
     ]);
-    users=u||[];activities=a||[];deals=d||[];
+    users=u||[];activities=a||[];deals=d||[];quotes=q||[];
     forecasts={};
     (f||[]).forEach(row=>{
       if(!forecasts[row.rep_name])forecasts[row.rep_name]={};
@@ -361,19 +366,33 @@ async function loadAllData(){
 async function dbInsert(table,data){const{data:r,error}=await sb.from(table).insert(data).select().single();if(error)throw error;return r;}
 async function dbUpdate(table,id,data){const{error}=await sb.from(table).update(data).eq('id',id);if(error)throw error;}
 async function dbDelete(table,id){const{error}=await sb.from(table).delete().eq('id',id);if(error)throw error;}
-async function dbUpsertForecast(repName,mk,data){
-  const{error}=await sb.from('forecasts').upsert({rep_name:repName,month_key:mk,...data},{onConflict:'rep_name,month_key'});
-  if(error)throw error;
+async function dbUpsertForecast(rn,mk,data){const{error}=await sb.from('forecasts').upsert({rep_name:rn,month_key:mk,...data},{onConflict:'rep_name,month_key'});if(error)throw error;}
+
+// ── QUOTE STORAGE ───────────────────────────────────────────────
+async function uploadQuoteToDB(dealId,file){
+  // 1. Upload file to Supabase Storage
+  const filePath=`${dealId}/${Date.now()}_${file.name}`;
+  const{error:upErr}=await sb.storage.from(STORAGE_BUCKET).upload(filePath,file,{contentType:'application/pdf',upsert:false});
+  if(upErr)throw upErr;
+  // 2. Get public URL
+  const{data:{publicUrl}}=sb.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
+  // 3. Save metadata to quotes table
+  const row=await dbInsert('quotes',{deal_id:dealId,file_name:file.name,file_path:filePath,public_url:publicUrl,uploaded_by:currentUser.name,uploaded_at:today()});
+  return row;
+}
+
+async function deleteQuoteFromDB(quoteId,filePath){
+  await sb.storage.from(STORAGE_BUCKET).remove([filePath]);
+  await dbDelete('quotes',quoteId);
 }
 
 // ═══════════════════════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════════════════════
 async function doLogin(){
-  const un=g('login-user').trim().toLowerCase();
-  const pw=g('login-pass');
+  const un=g('login-user').trim().toLowerCase(),pw=g('login-pass');
   if(!un||!pw){document.getElementById('login-error').textContent='Please enter username and password.';document.getElementById('login-error').style.display='block';return;}
-  document.getElementById('login-spinner').style.display='block';
+  const btn=document.getElementById('login-btn');btn.disabled=true;btn.innerHTML='<div class="spinner"></div> Signing in…';
   document.getElementById('login-error').style.display='none';
   try{
     const{data,error}=await sb.from('users').select('*').eq('username',un).eq('password',pw).maybeSingle();
@@ -388,11 +407,11 @@ async function doLogin(){
     await loadAllData();
     switchTab('dashboard');
   }catch(e){document.getElementById('login-error').textContent='Login failed. Please try again.';document.getElementById('login-error').style.display='block';console.error(e);}
-  finally{document.getElementById('login-spinner').style.display='none';}
+  finally{btn.disabled=false;btn.innerHTML='<i class="ti ti-login"></i> Sign in';}
 }
 
 function doLogout(){
-  currentUser=null;users=[];activities=[];deals=[];forecasts={};
+  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};
   document.getElementById('login-screen').style.display='block';
   document.getElementById('main-app').style.display='none';
   document.getElementById('login-user').value='';document.getElementById('login-pass').value='';
@@ -403,12 +422,13 @@ function doLogout(){
 // TABS
 // ═══════════════════════════════════════════════════════════════
 function switchTab(t){
-  const names=['dashboard','forecast','eod','conversion','activity','pipeline','users'];
+  const names=['dashboard','deals','forecast','eod','conversion','activity','pipeline','users'];
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',names[i]===t));
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   const p=document.getElementById('tab-'+t);if(p)p.classList.add('active');
   const pln=document.getElementById('pipe-lock-notice');if(pln)pln.style.display=isAdmin()?'none':'inline-flex';
   if(t==='dashboard')renderDashboard();
+  if(t==='deals')renderDeals();
   if(t==='forecast')renderForecast();
   if(t==='eod')renderEOD();
   if(t==='conversion')renderConversion();
@@ -422,9 +442,7 @@ function switchTab(t){
 // ═══════════════════════════════════════════════════════════════
 function renderDashboard(){
   const mk=currentMonthKey();const repList=reps();
-  if(!repList.length){
-    document.getElementById('dash-content').innerHTML=`<div class="info-banner"><i class="ti ti-info-circle" style="font-size:20px;flex-shrink:0"></i><div><div style="font-weight:500;margin-bottom:3px">No reps yet</div><div>Add reps in the <a href="#" onclick="switchTab('users');return false" style="color:var(--info-text)">Users tab</a> to start tracking sales.</div></div></div>`;return;
-  }
+  if(!repList.length){document.getElementById('dash-content').innerHTML=`<div class="info-banner"><i class="ti ti-info-circle" style="font-size:20px;flex-shrink:0"></i><div><div style="font-weight:500;margin-bottom:3px">No reps yet</div><div>Add reps in the <a href="#" onclick="switchTab('users');return false" style="color:var(--info-text)">Users tab</a> to start tracking sales.</div></div></div>`;return;}
   let teamWonT=0,teamWtT=0,teamWonA=0,teamWtA=0;
   repList.forEach(r=>{const fc=getFC(r.name,mk);teamWonT+=fc.won_target||0;teamWtT+=fc.weighted_target||0;teamWonA+=wonForRepMonth(r.name,mk);teamWtA+=weightedForRep(r.name);});
   const wonPct=pctFmt(teamWonA,teamWonT),wtPct=pctFmt(teamWtA,teamWtT);
@@ -449,13 +467,9 @@ function renderDashboard(){
       <div class="target-strip-name"><div class="avatar" style="${avStyle(i)};width:28px;height:28px;font-size:10px;font-weight:600">${initials(r.name)}</div>
         <span>${r.name}</span>${fc.submitted?`<span class="submitted-badge" style="margin-left:4px"><i class="ti ti-check" style="font-size:10px"></i> Submitted</span>`:''}
       </div>
-      ${hasTarget?`<div class="target-strip-pcts">
-        <div class="target-pct"><div class="target-pct-val ${pctColor(wonP)}">${wonP}%</div><div class="target-pct-label">Won</div></div>
-        <div class="target-pct"><div class="target-pct-val ${pctColor(wtP)}">${wtP}%</div><div class="target-pct-label">Weighted</div></div>
-      </div>`:''}
+      ${hasTarget?`<div class="target-strip-pcts"><div class="target-pct"><div class="target-pct-val ${pctColor(wonP)}">${wonP}%</div><div class="target-pct-label">Won</div></div><div class="target-pct"><div class="target-pct-val ${pctColor(wtP)}">${wtP}%</div><div class="target-pct-label">Weighted</div></div></div>`:''}
     </div>
-    ${hasTarget?`<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-bottom:3px"><span>Won: ${fmt(wonA)} of ${fmt(fc.won_target)}</span><span>${wonP}%</span></div><div class="bar-track"><div class="bar-fill ${barColorPct(wonP)}" style="width:${Math.min(wonP,100)}%"></div></div></div>
-    <div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-bottom:3px"><span>Weighted: ${fmt(Math.round(wtA))} of ${fmt(fc.weighted_target)}</span><span>${wtP}%</span></div><div class="bar-track"><div class="bar-fill bar-blue" style="width:${Math.min(wtP,100)}%"></div></div></div>`:`<div style="font-size:12px;color:var(--text-tertiary);font-style:italic">No forecast submitted yet</div>`}
+    ${hasTarget?`<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-bottom:3px"><span>Won: ${fmt(wonA)} of ${fmt(fc.won_target)}</span><span>${wonP}%</span></div><div class="bar-track"><div class="bar-fill ${barColorPct(wonP)}" style="width:${Math.min(wonP,100)}%"></div></div></div><div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-bottom:3px"><span>Weighted: ${fmt(Math.round(wtA))} of ${fmt(fc.weighted_target)}</span><span>${wtP}%</span></div><div class="bar-track"><div class="bar-fill bar-blue" style="width:${Math.min(wtP,100)}%"></div></div></div>`:`<div style="font-size:12px;color:var(--text-tertiary);font-style:italic">No forecast submitted yet</div>`}
     </div>`;
   });
   const funnelStages=STAGES.filter(s=>s!=='Closed Won'&&s!=='Closed Lost');
@@ -465,10 +479,121 @@ function renderDashboard(){
   h+=`<div class="section-hd" style="margin-top:20px;margin-bottom:10px">Pipeline funnel</div>${fH}<div class="two-col"><div><div class="section-hd">Pipeline by stage</div>`;
   h+=STAGES.map(s=>{const ds=deals.filter(d=>d.stage===s);const v=ds.reduce((t,d)=>t+d.value,0);return`<div class="stage-row"><span class="badge ${SC[s]||'b-gray'}" style="min-width:90px;text-align:center">${s}</span><span style="font-size:12px;color:var(--text-secondary)">${ds.length} deal${ds.length!==1?'s':''}</span><span style="margin-left:auto;font-size:12px;font-weight:500">${v?fmt(v):''}</span></div>`;}).join('');
   h+=`</div><div><div class="section-hd">Rep performance</div>`;
-  h+=repList.map((r,i)=>{const rd=deals.filter(d=>d.rep===r.name);const wr=rd.length>0?Math.round(rd.filter(d=>d.status==='Won').length/rd.length*100):0;const wv=rd.filter(d=>d.status==='Won').reduce((s,d)=>s+d.value,0);
-    return`<div class="stage-row"><div class="avatar" style="${avStyle(i)};width:28px;height:28px;font-size:10px;font-weight:600">${initials(r.name)}</div><span style="font-size:13px;font-weight:500">${r.name}</span><span style="margin-left:6px" class="badge ${wr>=60?'b-green':wr>=35?'b-amber':'b-coral'}">${wr}% win</span><span style="margin-left:auto;font-size:12px;font-weight:500">${wv?fmt(wv):'—'}</span></div>`;}).join('');
-  h+=`</div></div>`;
-  document.getElementById('dash-content').innerHTML=h;
+  h+=repList.map((r,i)=>{const rd=deals.filter(d=>d.rep===r.name);const wr=rd.length>0?Math.round(rd.filter(d=>d.status==='Won').length/rd.length*100):0;const wv=rd.filter(d=>d.status==='Won').reduce((s,d)=>s+d.value,0);return`<div class="stage-row"><div class="avatar" style="${avStyle(i)};width:28px;height:28px;font-size:10px;font-weight:600">${initials(r.name)}</div><span style="font-size:13px;font-weight:500">${r.name}</span><span style="margin-left:6px" class="badge ${wr>=60?'b-green':wr>=35?'b-amber':'b-coral'}">${wr}% win</span><span style="margin-left:auto;font-size:12px;font-weight:500">${wv?fmt(wv):'—'}</span></div>`;}).join('');
+  h+=`</div></div>`;document.getElementById('dash-content').innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEALS TAB
+// ═══════════════════════════════════════════════════════════════
+function renderDeals(){
+  const searchQ=(document.getElementById('deal-search')?.value||'').toLowerCase();
+  const stageFil=document.getElementById('deal-stage')?.value||'';
+  const repFil=document.getElementById('deal-rep')?.value||'';
+  const activeDeals=deals.filter(d=>d.status==='Active');
+  const totalPipe=activeDeals.reduce((s,d)=>s+d.value,0);
+  const weighted=activeDeals.reduce((s,d)=>s+d.value*d.prob/100,0);
+  const withQuotes=activeDeals.filter(d=>quotesForDeal(d.id).length>0).length;
+  const overdue=activeDeals.filter(d=>d.close&&daysUntil(d.close)<0).length;
+  const repNames2=[...new Set(activeDeals.map(d=>d.rep))].sort();
+  let filtered=activeDeals.filter(d=>
+    (!stageFil||d.stage===stageFil)&&(!repFil||d.rep===repFil)&&
+    (!searchQ||[d.opportunity,d.customer,d.company].join(' ').toLowerCase().includes(searchQ))
+  );
+  if(isRep())filtered=filtered.filter(d=>d.rep===currentUser.name);
+
+  let h=`<div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Active deals</div><div class="kpi-val">${activeDeals.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Pipeline value</div><div class="kpi-val" style="font-size:17px">${fmt(totalPipe)}</div></div>
+    <div class="kpi"><div class="kpi-label">Weighted value</div><div class="kpi-val" style="font-size:17px">${fmt(Math.round(weighted))}</div></div>
+    <div class="kpi"><div class="kpi-label">Quotes uploaded</div><div class="kpi-val">${withQuotes} / ${activeDeals.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-val ${overdue>0?'low':''}">${overdue}</div></div>
+  </div>
+  <div class="toolbar">
+    <input type="text" id="deal-search" placeholder="Search deals…" oninput="renderDeals()" value="${searchQ}" style="width:175px">
+    <select id="deal-stage" onchange="renderDeals()" style="height:32px"><option value="">All stages</option>${STAGES.map(s=>`<option${s===stageFil?' selected':''}>${s}</option>`).join('')}</select>
+    ${!isRep()?`<select id="deal-rep" onchange="renderDeals()" style="height:32px"><option value="">All reps</option>${repNames2.map(r=>`<option${r===repFil?' selected':''}>${r}</option>`).join('')}</select>`:''}
+    <button class="btn primary" onclick="openModal('pipeline')"><i class="ti ti-plus"></i> Add deal</button>
+  </div>`;
+
+  if(!filtered.length){h+=`<div class="empty">No active deals match your filters</div>`;document.getElementById('deals-content').innerHTML=h;return;}
+
+  h+=`<div class="deals-grid">`;
+  filtered.forEach(d=>{
+    const qs=quotesForDeal(d.id);
+    const days=daysUntil(d.close);
+    const closeClass=days===null?'':days<0?'overdue':days<=7?'due-soon':'';
+    const closeLabel=days===null?'No close date':days<0?`${Math.abs(days)}d overdue`:days===0?'Due today':days<=7?`Due in ${days}d`:`Close ${fmtDate(d.close)}`;
+    h+=`<div class="deal-card">
+      <div class="deal-card-top">
+        <div class="deal-card-hd">
+          <div style="flex:1;min-width:0">
+            <div class="deal-opp">${d.opportunity}</div>
+            <div class="deal-meta">${d.customer} · ${d.company}</div>
+          </div>
+          <span class="badge ${SC[d.stage]||'b-gray'}" style="flex-shrink:0">${d.stage}</span>
+        </div>
+        <div class="deal-stats">
+          <span class="deal-val">${fmt(d.value)}</span>
+          <span class="badge b-gray">${d.prob}%</span>
+          <span style="font-size:12px;color:var(--text-secondary)">${d.rep}</span>
+          <span class="close-tag ${closeClass}" style="margin-left:auto">${closeLabel}</span>
+        </div>
+      </div>
+      <div class="deal-card-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="section-hd" style="margin-bottom:0">Quotes (${qs.length})</div>
+          ${isAdmin()?`<label style="cursor:pointer" title="Upload PDF quote">
+            <div class="btn success" style="font-size:12px;padding:4px 10px"><i class="ti ti-upload"></i> Upload PDF</div>
+            <input type="file" accept=".pdf,application/pdf" style="display:none" onchange="handleUpload(event,${d.id})">
+          </label>`:''}
+        </div>
+        ${qs.length?qs.map(q=>`<div class="quote-item">
+          <i class="ti ti-file-type-pdf" style="font-size:18px;color:#C0392B;flex-shrink:0"></i>
+          <span class="quote-item-name" title="${q.file_name}">${q.file_name}</span>
+          <span class="quote-item-date">${fmtDate(q.uploaded_at)}</span>
+          <a href="${q.public_url}" target="_blank" class="btn" style="font-size:11px;padding:3px 8px;text-decoration:none"><i class="ti ti-eye"></i> View</a>
+          ${isAdmin()?`<button class="icon-btn del" onclick="removeQuote(${q.id},'${q.file_path}')" title="Remove quote"><i class="ti ti-trash"></i></button>`:''}
+        </div>`).join(''):`<div style="font-size:12px;color:var(--text-tertiary);font-style:italic;padding:4px 0">${isAdmin()?'No quotes yet — upload a PDF above':'No quotes uploaded yet'}</div>`}
+        <div class="prog-bar" id="prog-${d.id}"><div class="prog-fill" id="prog-fill-${d.id}" style="width:0%"></div></div>
+      </div>
+      <div class="deal-card-footer">
+        <div style="display:flex;gap:6px">
+          <button class="btn" style="font-size:12px" onclick="openModal('editDeal',${d.id})"><i class="ti ti-edit"></i> Edit</button>
+          ${isAdmin()?`<button class="icon-btn del" onclick="openModal('deleteDeal',${d.id})" title="Delete deal"><i class="ti ti-trash"></i></button>`:''}
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary)">Weighted: ${fmt(Math.round(d.value*d.prob/100))}</div>
+      </div>
+    </div>`;
+  });
+  h+=`</div>`;
+  document.getElementById('deals-content').innerHTML=h;
+}
+
+async function handleUpload(event,dealId){
+  const file=event.target.files[0];event.target.value='';
+  if(!file){return;}
+  if(file.type!=='application/pdf'&&!file.name.toLowerCase().endsWith('.pdf')){toast('Please select a PDF file','err');return;}
+  if(file.size>15*1024*1024){toast('File must be under 15MB','err');return;}
+  const prog=document.getElementById(`prog-${dealId}`);
+  const fill=document.getElementById(`prog-fill-${dealId}`);
+  if(prog){prog.style.display='block';fill.style.width='10%';}
+  let tick=10;const interval=setInterval(()=>{tick=Math.min(tick+10,85);if(fill)fill.style.width=tick+'%';},200);
+  try{
+    const row=await uploadQuoteToDB(dealId,file);
+    clearInterval(interval);if(fill)fill.style.width='100%';
+    quotes.push(row);
+    toast(`"${file.name}" uploaded`);
+    setTimeout(()=>{if(prog)prog.style.display='none';renderDeals();},400);
+  }catch(e){clearInterval(interval);if(prog)prog.style.display='none';toast('Upload failed: '+e.message,'err');console.error(e);}
+}
+
+async function removeQuote(quoteId,filePath){
+  if(!confirm('Remove this quote? This cannot be undone.'))return;
+  showLoading('Removing…');
+  try{await deleteQuoteFromDB(quoteId,filePath);quotes=quotes.filter(q=>q.id!==quoteId);toast('Quote removed');renderDeals();}
+  catch(e){toast('Remove failed','err');console.error(e);}
+  hideLoading();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -476,13 +601,13 @@ function renderDashboard(){
 // ═══════════════════════════════════════════════════════════════
 function renderUsers(){
   const admins=users.filter(u=>u.role==='admin');const repList=reps();
-  let h=`<div class="info-banner"><i class="ti ti-shield-lock" style="font-size:20px;flex-shrink:0"></i><div><div style="font-weight:500;margin-bottom:2px">User management</div><div>Create admins and reps. Admins manage pipeline and forecasts. Reps log activities, add deals, and submit their own forecasts.</div></div></div>`;
+  let h=`<div class="info-banner"><i class="ti ti-shield-lock" style="font-size:20px;flex-shrink:0"></i><div><div style="font-weight:500;margin-bottom:2px">User management</div><div>Create admins and reps. Admins manage pipeline, deals, quotes and forecasts. Reps log activities, add deals, and submit their own forecasts.</div></div></div>`;
   h+=`<div class="section-hd" style="margin-bottom:10px">Admins</div><div class="toolbar" style="margin-bottom:14px"><button class="btn primary" onclick="openModal('newUser','admin')"><i class="ti ti-plus"></i> Add admin</button></div>`;
   if(!admins.length){h+=`<div style="padding:1.5rem;background:var(--bg-secondary);border-radius:var(--radius-md);margin-bottom:1.5rem;font-size:13px;color:var(--text-secondary)">No admins yet</div>`;}
-  else{h+=`<div class="user-grid" style="margin-bottom:1.5rem">`;admins.forEach((u,i)=>{h+=userCard(u,i);});h+=`</div>`;}
+  else{h+=`<div class="user-grid" style="margin-bottom:1.5rem">${admins.map((u,i)=>userCard(u,i)).join('')}</div>`;}
   h+=`<div class="section-hd" style="margin-bottom:10px">Reps</div><div class="toolbar" style="margin-bottom:14px"><button class="btn primary" onclick="openModal('newUser','rep')"><i class="ti ti-plus"></i> Add rep</button></div>`;
-  if(!repList.length){h+=`<div style="padding:1.5rem;background:var(--bg-secondary);border-radius:var(--radius-md);font-size:13px;color:var(--text-secondary)">No reps yet</div>`;}
-  else{h+=`<div class="user-grid">`;repList.forEach((u,i)=>{h+=userCard(u,i);});h+=`</div>`;}
+  if(!repList.length){h+=`<div style="padding:1.5rem;background:var(--bg-secondary);border-radius:var(--radius-md);font-size:13px;color:var(--text-secondary)">No reps yet — add your first rep to start tracking</div>`;}
+  else{h+=`<div class="user-grid">${repList.map((u,i)=>userCard(u,i)).join('')}</div>`;}
   document.getElementById('users-content').innerHTML=h;
 }
 
@@ -495,13 +620,13 @@ function userCard(u,i){
       <div class="user-name">${u.name}</div>
       <div class="user-meta"><i class="ti ti-at" style="font-size:12px"></i> ${u.username}</div>
       ${u.territory?`<div class="user-meta"><i class="ti ti-map-pin" style="font-size:12px"></i> ${u.territory}</div>`:''}
-      <div class="user-meta" style="margin-top:4px;display:flex;gap:8px;align-items:center">
+      <div class="user-meta" style="margin-top:4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <span class="role-pill ${rolePillClass(u.role)}" style="font-size:10px;padding:2px 7px">${roleLabel(u.role)}</span>
         ${u.role==='rep'?`<span>${acts} acts</span>${pipe?`<span style="color:var(--success-text);font-weight:500">${fmt(pipe)}</span>`:''}`:''}</div>
     </div>
     <div class="user-actions">
-      <button class="icon-btn" onclick="openModal('editUser',${u.id})" title="Edit user"><i class="ti ti-edit"></i></button>
-      <button class="icon-btn del" onclick="openModal('deleteUser',${u.id})" title="Remove user"><i class="ti ti-trash"></i></button>
+      <button class="icon-btn" onclick="openModal('editUser',${u.id})" title="Edit"><i class="ti ti-edit"></i></button>
+      <button class="icon-btn del" onclick="openModal('deleteUser',${u.id})" title="Remove"><i class="ti ti-trash"></i></button>
     </div>
   </div>`;
 }
@@ -515,7 +640,7 @@ function renderForecast(){
   const repList=reps();if(!repList.length){document.getElementById('fc-content').innerHTML=`<div class="info-banner"><i class="ti ti-info-circle" style="font-size:20px;flex-shrink:0"></i><div>No reps yet. Add reps in the Users tab first.</div></div>`;return;}
   const now=new Date();let monthOpts='';
   for(let delta=-3;delta<=6;delta++){const d=new Date(now.getFullYear(),now.getMonth()+delta,1);const mk=monthKey(d.getFullYear(),d.getMonth());monthOpts+=`<option value="${mk}"${mk===currentMonthKey()?' selected':''}>${MONTHS[d.getMonth()]} ${d.getFullYear()}</option>`;}
-  document.getElementById('fc-content').innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap"><span style="font-size:13px;font-weight:500;color:var(--text-secondary)">Month:</span><select id="fc-month-sel" onchange="renderForecastCards()" style="height:32px">${monthOpts}</select></div><div id="fc-cards"></div>`;
+  document.getElementById('fc-content').innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap"><span style="font-size:13px;font-weight:500;color:var(--text-secondary)">Month:</span><select id="fc-month-sel" onchange="renderForecastCards()">${monthOpts}</select></div><div id="fc-cards"></div>`;
   renderForecastCards();
 }
 
@@ -569,23 +694,20 @@ async function repSubmitFC(rn,rid){
   const data={won_target:parseFloat(g(`won-target-${rid}`))||0,weighted_target:parseFloat(g(`wt-target-${rid}`))||0,notes:g(`notes-${rid}`),submitted:true,submitted_at:today(),admin_override:false};
   showLoading('Saving forecast…');
   try{await dbUpsertForecast(rn,mk,data);if(!forecasts[rn])forecasts[rn]={};forecasts[rn][mk]=data;toast('Forecast submitted');renderForecastCards();}
-  catch(e){toast('Save failed','err');console.error(e);}
-  hideLoading();
+  catch(e){toast('Save failed','err');console.error(e);}hideLoading();
 }
 async function adminSaveFC(rn,rid){
-  const mk=getFCMonthKey();const was=getFC(rn,mk).submitted||false;
+  const mk=getFCMonthKey();
   const data={won_target:parseFloat(g(`won-target-${rid}`))||0,weighted_target:parseFloat(g(`wt-target-${rid}`))||0,notes:g(`notes-${rid}`),submitted:true,submitted_at:getFC(rn,mk).submitted_at||today(),admin_override:true};
   showLoading('Saving…');
   try{await dbUpsertForecast(rn,mk,data);if(!forecasts[rn])forecasts[rn]={};forecasts[rn][mk]=data;toast('Saved');renderForecastCards();}
-  catch(e){toast('Save failed','err');console.error(e);}
-  hideLoading();
+  catch(e){toast('Save failed','err');console.error(e);}hideLoading();
 }
 async function adminUnlockFC(rn,mk){
   const fc=getFC(rn,mk);const data={...fc,submitted:false,admin_override:false};
   showLoading('Unlocking…');
   try{await dbUpsertForecast(rn,mk,data);forecasts[rn][mk]=data;toast('Unlocked for rep');renderForecastCards();}
-  catch(e){toast('Failed','err');console.error(e);}
-  hideLoading();
+  catch(e){toast('Failed','err');console.error(e);}hideLoading();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -655,21 +777,12 @@ function renderConversion(){
   const allWV=deals.filter(d=>d.status==='Won').reduce((s,d)=>s+d.value,0);
   const allAvg=allWon>0?Math.round(allWV/allWon):0;
   let h='';
-  if(!isRep()){h+=`<div class="kpi-grid" style="margin-bottom:1.5rem">
-    <div class="kpi"><div class="kpi-label">Overall win rate</div><div class="kpi-val">${allWR}%</div></div>
-    <div class="kpi"><div class="kpi-label">Deals won</div><div class="kpi-val">${allWon}</div></div>
-    <div class="kpi"><div class="kpi-label">Deals lost</div><div class="kpi-val">${deals.filter(d=>d.status==='Lost').length}</div></div>
-    <div class="kpi"><div class="kpi-label">Avg deal (won)</div><div class="kpi-val" style="font-size:16px">${allAvg?fmt(allAvg):'—'}</div></div>
-  </div>`;}
+  if(!isRep()){h+=`<div class="kpi-grid" style="margin-bottom:1.5rem"><div class="kpi"><div class="kpi-label">Overall win rate</div><div class="kpi-val">${allWR}%</div></div><div class="kpi"><div class="kpi-label">Deals won</div><div class="kpi-val">${allWon}</div></div><div class="kpi"><div class="kpi-label">Deals lost</div><div class="kpi-val">${deals.filter(d=>d.status==='Lost').length}</div></div><div class="kpi"><div class="kpi-label">Avg deal (won)</div><div class="kpi-val" style="font-size:16px">${allAvg?fmt(allAvg):'—'}</div></div></div>`;}
   h+=`<div class="section-hd" style="margin-bottom:12px">Stage conversion rates per rep</div>`;
   vis.forEach((r,i)=>{const rd=deals.filter(d=>d.rep===r.name);const wr=rd.length>0?Math.round(rd.filter(d=>d.status==='Won').length/rd.length*100):0;
-    h+=`<div style="background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><div class="avatar" style="${avStyle(i)}">${initials(r.name)}</div>
-        <div><div style="font-size:14px;font-weight:500">${r.name}</div><div style="font-size:12px;color:var(--text-secondary)">${r.territory||''} · ${rd.length} deals · win rate <span class="${wr>=60?'good':wr>=35?'mid':'low'}" style="font-weight:500">${wr}%</span></div></div>
-      </div><div style="display:flex;gap:6px;flex-wrap:wrap">`;
+    h+=`<div style="background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><div class="avatar" style="${avStyle(i)}">${initials(r.name)}</div><div><div style="font-size:14px;font-weight:500">${r.name}</div><div style="font-size:12px;color:var(--text-secondary)">${r.territory||''} · ${rd.length} deals · win rate <span class="${wr>=60?'good':wr>=35?'mid':'low'}" style="font-weight:500">${wr}%</span></div></div></div><div style="display:flex;gap:6px;flex-wrap:wrap">`;
     const so=STAGES.filter(s=>s!=='Closed Lost');
-    for(let si=0;si<so.length-1;si++){const fc2=deals.filter(d=>d.rep===r.name&&STAGES.indexOf(d.stage)>=si).length;const tc=deals.filter(d=>d.rep===r.name&&STAGES.indexOf(d.stage)>=si+1).length;const rate=fc2>0?Math.round(tc/fc2*100):null;const rc=rate===null?'':rate>=60?'good':rate>=35?'mid':'low';
-      h+=`<div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:8px 11px;font-size:12px;min-width:130px"><div style="color:var(--text-secondary);margin-bottom:2px">${so[si]} → ${so[si+1]}</div><div class="${rc}" style="font-weight:600;font-size:15px">${rate!==null?rate+'%':'n/a'}</div><div style="font-size:10px;color:var(--text-tertiary)">${tc} of ${fc2}</div></div>`;}
+    for(let si=0;si<so.length-1;si++){const fc2=deals.filter(d=>d.rep===r.name&&STAGES.indexOf(d.stage)>=si).length;const tc=deals.filter(d=>d.rep===r.name&&STAGES.indexOf(d.stage)>=si+1).length;const rate=fc2>0?Math.round(tc/fc2*100):null;const rc=rate===null?'':rate>=60?'good':rate>=35?'mid':'low';h+=`<div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:8px 11px;font-size:12px;min-width:130px"><div style="color:var(--text-secondary);margin-bottom:2px">${so[si]} → ${so[si+1]}</div><div class="${rc}" style="font-weight:600;font-size:15px">${rate!==null?rate+'%':'n/a'}</div><div style="font-size:10px;color:var(--text-tertiary)">${tc} of ${fc2}</div></div>`;}
     h+=`</div></div>`;});
   document.getElementById('conv-content').innerHTML=h;
 }
@@ -692,8 +805,8 @@ function renderActivity(){
   if(isRep())f=f.filter(a=>a.rep===currentUser.name);
   f.sort((a,b)=>b.date.localeCompare(a.date));
   const tb=document.getElementById('act-body');
-  if(!f.length){tb.innerHTML=`<tr><td colspan="10"><div class="empty">No activities found</div></td></tr>`;return;}
-  tb.innerHTML=f.map(a=>`<tr><td>${a.date}</td><td>${a.rep}</td><td>${a.customer}</td><td>${a.company}</td><td><span class="badge b-blue">${a.type}</span></td><td title="${a.purpose}">${a.purpose}</td><td style="text-align:center">${a.mins}</td><td style="text-align:center"><span class="badge ${a.followup==='Yes'?'b-amber':'b-gray'}">${a.followup}</span></td><td>${a.fudate||'—'}</td><td title="${a.outcome}">${a.outcome}</td></tr>`).join('');
+  if(!f.length){tb.innerHTML=`<tr><td colspan="11"><div class="empty">No activities found</div></td></tr>`;return;}
+  tb.innerHTML=f.map(a=>`<tr><td>${a.date}</td><td>${a.rep}</td><td>${a.customer}</td><td>${a.company}</td><td><span class="badge b-blue">${a.type}</span></td><td title="${a.purpose}">${a.purpose}</td><td style="text-align:center">${a.mins}</td><td style="text-align:center"><span class="badge ${a.followup==='Yes'?'b-amber':'b-gray'}">${a.followup}</span></td><td>${a.fudate||'—'}</td><td title="${a.outcome}">${a.outcome}</td><td>${isAdmin()?`<div style="display:flex;gap:4px"><button class="icon-btn" onclick="openModal('editActivity',${a.id})" title="Edit activity"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="openModal('deleteActivity',${a.id})" title="Delete activity"><i class="ti ti-trash"></i></button></div>`:''}</td></tr>`).join('');
 }
 
 function renderPipeline(){
@@ -703,8 +816,8 @@ function renderPipeline(){
   let f=deals.filter(d=>(!rep||d.rep===rep)&&(!stage||d.stage===stage)&&(!q||[d.customer,d.company,d.opportunity].join(' ').toLowerCase().includes(q)));
   if(isRep())f=f.filter(d=>d.rep===currentUser.name);
   const tb=document.getElementById('pipe-body');const admin=isAdmin();
-  if(!f.length){tb.innerHTML=`<tr><td colspan="11"><div class="empty">No deals found</div></td></tr>`;}
-  else tb.innerHTML=f.map(d=>`<tr><td>${d.rep}</td><td>${d.customer}</td><td>${d.company}</td><td title="${d.opportunity}">${d.opportunity}</td><td><span class="badge ${SC[d.stage]||'b-gray'}">${d.stage}</span></td><td style="text-align:right">${fmt(d.value)}</td><td style="text-align:center">${d.prob}%</td><td style="text-align:right">${fmt(Math.round(d.value*d.prob/100))}</td><td>${d.close}</td><td><span class="badge ${d.status==='Won'?'b-green':d.status==='Lost'?'b-coral':'b-blue'}">${d.status}</span></td><td><button class="icon-btn del" onclick="openModal('deleteDeal',${d.id})" ${admin?'':'disabled'} title="${admin?'Delete deal':'Admin only'}"><i class="ti ti-trash"></i></button></td></tr>`).join('');
+  if(!f.length){tb.innerHTML=`<tr><td colspan="12"><div class="empty">No deals found</div></td></tr>`;}
+  else tb.innerHTML=f.map(d=>{const qs=quotesForDeal(d.id);return`<tr><td>${d.rep}</td><td>${d.customer}</td><td>${d.company}</td><td title="${d.opportunity}">${d.opportunity}</td><td><span class="badge ${SC[d.stage]||'b-gray'}">${d.stage}</span></td><td style="text-align:right">${fmt(d.value)}</td><td style="text-align:center">${d.prob}%</td><td style="text-align:right">${fmt(Math.round(d.value*d.prob/100))}</td><td>${d.close||'—'}</td><td><span class="badge ${d.status==='Won'?'b-green':d.status==='Lost'?'b-coral':'b-blue'}">${d.status}</span></td><td style="text-align:center">${qs.length?`<span class="badge b-green" style="cursor:pointer" onclick="switchTab('deals')" title="View in Deals tab">${qs.length} PDF${qs.length!==1?'s':''}</span>`:`<span style="font-size:11px;color:var(--text-tertiary)">None</span>`}</td><td><button class="icon-btn del" onclick="openModal('deleteDeal',${d.id})" ${admin?'':'disabled'} title="${admin?'Delete deal':'Admin only'}"><i class="ti ti-trash"></i></button></td></tr>`;}).join('');
   document.getElementById('pipe-total').textContent=fmt(f.reduce((s,d)=>s+d.value,0));
   document.getElementById('pipe-weighted').textContent=fmt(Math.round(f.reduce((s,d)=>s+d.value*d.prob/100,0)));
   document.getElementById('pipe-count').textContent=f.length;
@@ -738,10 +851,39 @@ function openModal(mode,extra){
     const u=users.find(x=>x.id===extra);title.textContent='Remove user';
     saveBtn.className='btn danger';saveBtn.textContent='Yes, remove';
     body.innerHTML=`<div class="confirm-box"><i class="ti ti-alert-triangle"></i> Remove <strong>${u.name}</strong> (${roleLabel(u.role)})? Their historical data stays intact.</div>`;
+  } else if(mode==='pipeline'||mode==='editDeal'){
+    const d=mode==='editDeal'?deals.find(x=>x.id===extra):{};
+    title.textContent=mode==='pipeline'?'Add deal':'Edit deal';
+    body.innerHTML=`<div class="form-2"><div class="form-row"><label>Rep</label><select id="f-rep"><option value="">Select…</option>${repOpts(d.rep||'')}</select></div>
+      <div class="form-row"><label>Stage</label><select id="f-stage" onchange="autoProb(this.value)">${STAGES.map(s=>`<option${s===(d.stage||'Qualified')?' selected':''}>${s}</option>`).join('')}</select></div></div>
+      <div class="form-2"><div class="form-row"><label>Customer name</label><input type="text" id="f-cust" value="${d.customer||''}"></div>
+      <div class="form-row"><label>Company</label><input type="text" id="f-company" value="${d.company||''}"></div></div>
+      <div class="form-row"><label>Opportunity / product</label><input type="text" id="f-opp" value="${d.opportunity||''}"></div>
+      <div class="form-2"><div class="form-row"><label>Deal value (R)</label><input type="number" id="f-value" value="${d.value||''}" min="0"></div>
+      <div class="form-row"><label>Probability %</label><input type="number" id="f-prob" value="${d.prob!==undefined?d.prob:DP['Qualified']}" min="0" max="100"></div></div>
+      <div class="form-2"><div class="form-row"><label>Expected close date</label><input type="date" id="f-close" value="${d.close||''}"></div>
+      <div class="form-row"><label>Status</label><select id="f-status"><option${(d.status||'Active')==='Active'?' selected':''}>Active</option><option${d.status==='Won'?' selected':''}>Won</option><option${d.status==='Lost'?' selected':''}>Lost</option></select></div></div>`;
   } else if(mode==='deleteDeal'){
     const d=deals.find(x=>x.id===extra);title.textContent='Delete deal';
     saveBtn.className='btn danger';saveBtn.textContent='Yes, delete';
-    body.innerHTML=`<div class="confirm-box"><i class="ti ti-alert-triangle"></i> Permanently delete <strong>${d.opportunity}</strong> for ${d.company} (${fmt(d.value)})? This cannot be undone.</div>`;
+    const qCount=quotesForDeal(extra).length;
+    body.innerHTML=`<div class="confirm-box"><i class="ti ti-alert-triangle"></i> Delete <strong>${d.opportunity}</strong> for ${d.company} (${fmt(d.value)})?${qCount?` <strong>${qCount} uploaded quote${qCount!==1?'s':''} will also be permanently deleted.</strong>`:''} This cannot be undone.</div>`;
+  } else if(mode==='editActivity'){
+    const a=activities.find(x=>x.id===extra);title.textContent='Edit activity';
+    body.innerHTML=`<div class="form-2"><div class="form-row"><label>Date</label><input type="date" id="f-date" value="${a.date}"></div>
+      <div class="form-row"><label>Rep</label><select id="f-rep"><option value="">Select…</option>${repOpts(a.rep)}</select></div></div>
+      <div class="form-2"><div class="form-row"><label>Customer name</label><input type="text" id="f-cust" value="${a.customer||''}"></div>
+      <div class="form-row"><label>Company</label><input type="text" id="f-company" value="${a.company||''}"></div></div>
+      <div class="form-2"><div class="form-row"><label>Contact type</label><select id="f-type">${TYPES.map(t=>`<option${t===a.type?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="form-row"><label>Duration (mins)</label><input type="number" id="f-mins" value="${a.mins||0}" min="1"></div></div>
+      <div class="form-row"><label>Purpose / agenda</label><input type="text" id="f-purpose" value="${a.purpose||''}"></div>
+      <div class="form-row"><label>Outcome</label><textarea id="f-outcome">${a.outcome||''}</textarea></div>
+      <div class="form-2"><div class="form-row"><label>Follow-up required?</label><select id="f-fu"><option${a.followup==='No'?' selected':''}>No</option><option${a.followup==='Yes'?' selected':''}>Yes</option></select></div>
+      <div class="form-row"><label>Follow-up date</label><input type="date" id="f-fudate" value="${a.fudate||''}"></div></div>`;
+  } else if(mode==='deleteActivity'){
+    const a=activities.find(x=>x.id===extra);title.textContent='Delete activity';
+    saveBtn.className='btn danger';saveBtn.textContent='Yes, delete';
+    body.innerHTML=`<div class="confirm-box"><i class="ti ti-alert-triangle"></i> Delete the activity for <strong>${a.customer}</strong> at ${a.company} on ${fmtDate(a.date)}? This cannot be undone.</div>`;
   } else if(mode==='activity'){
     title.textContent='Log activity';const dr=isRep()?currentUser.name:'';
     body.innerHTML=`<div class="form-2"><div class="form-row"><label>Date</label><input type="date" id="f-date" value="${today()}"></div>
@@ -754,17 +896,6 @@ function openModal(mode,extra){
       <div class="form-row"><label>Outcome</label><textarea id="f-outcome"></textarea></div>
       <div class="form-2"><div class="form-row"><label>Follow-up required?</label><select id="f-fu"><option>No</option><option>Yes</option></select></div>
       <div class="form-row"><label>Follow-up date</label><input type="date" id="f-fudate"></div></div>`;
-  } else if(mode==='pipeline'){
-    title.textContent='Add deal';const dr=isRep()?currentUser.name:'';
-    body.innerHTML=`<div class="form-2"><div class="form-row"><label>Rep</label><select id="f-rep"><option value="">Select…</option>${repOpts(dr)}</select></div>
-      <div class="form-row"><label>Stage</label><select id="f-stage" onchange="autoProb(this.value)">${STAGES.map(s=>`<option>${s}</option>`).join('')}</select></div></div>
-      <div class="form-2"><div class="form-row"><label>Customer name</label><input type="text" id="f-cust"></div>
-      <div class="form-row"><label>Company</label><input type="text" id="f-company"></div></div>
-      <div class="form-row"><label>Opportunity / product</label><input type="text" id="f-opp"></div>
-      <div class="form-2"><div class="form-row"><label>Deal value (R)</label><input type="number" id="f-value" min="0"></div>
-      <div class="form-row"><label>Probability %</label><input type="number" id="f-prob" value="${DP['Qualified']}" min="0" max="100"></div></div>
-      <div class="form-2"><div class="form-row"><label>Expected close date</label><input type="date" id="f-close"></div>
-      <div class="form-row"><label>Status</label><select id="f-status"><option>Active</option><option>Won</option><option>Lost</option></select></div></div>`;
   }
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -787,15 +918,30 @@ async function saveModal(){
     } else if(modalMode==='deleteUser'){
       await dbDelete('users',targetId);users=users.filter(u=>u.id!==targetId);
       toast('User removed');closeModal();renderUsers();
+    } else if(modalMode==='pipeline'){
+      const row=await dbInsert('deals',{rep:g('f-rep'),customer:g('f-cust'),company:g('f-company'),opportunity:g('f-opp'),stage:g('f-stage'),value:parseFloat(g('f-value'))||0,prob:parseFloat(g('f-prob'))||0,close:g('f-close')||null,status:g('f-status')});
+      deals.unshift(row);toast('Deal added');closeModal();renderDeals();
+    } else if(modalMode==='editDeal'){
+      const updates={rep:g('f-rep'),customer:g('f-cust'),company:g('f-company'),opportunity:g('f-opp'),stage:g('f-stage'),value:parseFloat(g('f-value'))||0,prob:parseFloat(g('f-prob'))||0,close:g('f-close')||null,status:g('f-status')};
+      await dbUpdate('deals',targetId,updates);const d=deals.find(x=>x.id===targetId);Object.assign(d,updates);
+      toast('Deal updated');closeModal();renderDeals();
     } else if(modalMode==='deleteDeal'){
+      // Delete all quotes for this deal first
+      const dqs=quotesForDeal(targetId);
+      for(const q of dqs){await deleteQuoteFromDB(q.id,q.file_path);}
+      quotes=quotes.filter(q=>q.deal_id!==targetId);
       await dbDelete('deals',targetId);deals=deals.filter(d=>d.id!==targetId);
-      toast('Deal deleted');closeModal();renderPipeline();
+      toast('Deal deleted');closeModal();renderDeals();
+    } else if(modalMode==='editActivity'){
+      const updates={date:g('f-date'),rep:g('f-rep'),customer:g('f-cust'),company:g('f-company'),type:g('f-type'),purpose:g('f-purpose'),mins:parseInt(g('f-mins'))||0,followup:g('f-fu'),fudate:g('f-fudate')||null,outcome:g('f-outcome')};
+      await dbUpdate('activities',targetId,updates);const a=activities.find(x=>x.id===targetId);Object.assign(a,updates);
+      toast('Activity updated');closeModal();renderActivity();
+    } else if(modalMode==='deleteActivity'){
+      await dbDelete('activities',targetId);activities=activities.filter(a=>a.id!==targetId);
+      toast('Activity deleted');closeModal();renderActivity();
     } else if(modalMode==='activity'){
       const row=await dbInsert('activities',{date:g('f-date'),rep:g('f-rep'),customer:g('f-cust'),company:g('f-company'),type:g('f-type'),purpose:g('f-purpose'),mins:parseInt(g('f-mins'))||0,followup:g('f-fu'),fudate:g('f-fudate')||null,outcome:g('f-outcome')});
       activities.unshift(row);toast('Activity logged');closeModal();renderActivity();
-    } else if(modalMode==='pipeline'){
-      const row=await dbInsert('deals',{rep:g('f-rep'),customer:g('f-cust'),company:g('f-company'),opportunity:g('f-opp'),stage:g('f-stage'),value:parseFloat(g('f-value'))||0,prob:parseFloat(g('f-prob'))||0,close:g('f-close')||null,status:g('f-status')});
-      deals.unshift(row);toast('Deal added');closeModal();renderPipeline();
     }
   }catch(e){toast('Save failed: '+e.message,'err');console.error(e);}
   saveBtn.disabled=false;
