@@ -167,6 +167,12 @@ tr:hover td{background:var(--bg-secondary)}
 .overdue{color:var(--danger-text);font-weight:600}
 .due-soon{color:var(--warn-text);font-weight:500}
 @media(max-width:640px){.two-col{grid-template-columns:1fr}.form-2{grid-template-columns:1fr}.shell{padding:12px}.fc-targets{grid-template-columns:1fr}.deals-grid{grid-template-columns:1fr}}
+/* ── WIP TRACKER ── */
+.wip-section-wrap{margin-bottom:24px}
+.wip-section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:10px 14px;background:var(--bg-secondary);border-radius:var(--radius-md);border:0.5px solid var(--border-light)}
+.wip-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+.wip-staff-row{display:grid;grid-template-columns:140px 1fr auto auto;gap:6px;align-items:center;margin-bottom:6px}
+.wip-staff-hd{display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px;padding-top:12px;border-top:0.5px solid var(--border-light)}
 </style>
 </head>
 <body>
@@ -214,6 +220,7 @@ tr:hover td{background:var(--bg-secondary)}
       <button class="tab" onclick="switchTab('conversion')"><i class="ti ti-trending-up"></i> Conversion</button>
       <button class="tab" onclick="switchTab('activity')"><i class="ti ti-calendar"></i> Activity log</button>
       <button class="tab" onclick="switchTab('pipeline')"><i class="ti ti-arrow-right"></i> Pipeline</button>
+      <button class="tab" id="tab-wip-btn" style="display:none" onclick="switchTab('wip')"><i class="ti ti-clipboard-list"></i> WIP Tracker</button>
       <button class="tab" id="tab-users-btn" style="display:none" onclick="switchTab('users')"><i class="ti ti-shield-lock"></i> Users</button>
     </div>
 
@@ -231,7 +238,7 @@ tr:hover td{background:var(--bg-secondary)}
         <button class="btn primary" onclick="openModal('activity')"><i class="ti ti-plus"></i> Log activity</button>
       </div>
       <div class="tbl-wrap"><table>
-        <colgroup><col style="width:88px"><col style="width:108px"><col style="width:120px"><col style="width:130px"><col style="width:90px"><col style="width:155px"><col style="width:54px"><col style="width:82px"><col style="width:82px"><col style="width:140px"><col style="width:36px"></colgroup>
+        <colgroup><col style="width:88px"><col style="width:108px"><col style="width:120px"><col style="width:130px"><col style="width:90px"><col style="width:155px"><col style="width:54px"><col style="width:82px"><col style="width:82px"><col style="width:140px"><col style="width:72px"></colgroup>
         <thead><tr><th>Date</th><th>Rep</th><th>Customer</th><th>Company</th><th>Type</th><th>Purpose</th><th>Mins</th><th>Follow-up?</th><th>F/U date</th><th>Outcome</th><th></th></tr></thead>
         <tbody id="act-body"></tbody>
       </table></div>
@@ -255,6 +262,21 @@ tr:hover td{background:var(--bg-secondary)}
         <span>Weighted: <strong id="pipe-weighted"></strong></span>
         <span>Deals shown: <strong id="pipe-count"></strong></span>
       </div>
+    </div>
+
+    <div id="tab-wip" class="panel">
+      <div class="toolbar">
+        <input type="text" id="wip-search" placeholder="Search jobs…" oninput="renderWIP()">
+        <select id="wip-status-filter" onchange="renderWIP()">
+          <option value="">All statuses</option>
+          <option>Jobs On The Go</option>
+          <option>Awaiting Approval</option>
+          <option>Job Complete</option>
+        </select>
+        <button class="btn primary" onclick="openModal('wipAdd')"><i class="ti ti-plus"></i> Add job</button>
+      </div>
+      <div class="kpi-grid" id="wip-kpi" style="margin-bottom:20px"></div>
+      <div id="wip-content"></div>
     </div>
 
     <div id="tab-users" class="panel"><div id="users-content"></div></div>
@@ -297,8 +319,9 @@ const AV_TX=["#1e40af","#166534","#92400e","#991b1b"];
 // STATE
 // ═══════════════════════════════════════════════════════════════
 let currentUser=null;
-let users=[], activities=[], deals=[], quotes=[], forecasts={};
+let users=[], activities=[], deals=[], quotes=[], forecasts={}, wipJobs=[];
 let modalMode='', targetId=null;
+let wipStaffRows=[];
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -344,14 +367,15 @@ function toast(msg,type='ok'){const t=document.getElementById('toast');t.textCon
 async function loadAllData(){
   showLoading('Loading data…');
   try{
-    const[{data:u},{data:a},{data:d},{data:q},{data:f}]=await Promise.all([
+    const[{data:u},{data:a},{data:d},{data:q},{data:f},{data:wj}]=await Promise.all([
       sb.from('users').select('*').order('name'),
       sb.from('activities').select('*').order('date',{ascending:false}),
       sb.from('deals').select('*').order('created_at',{ascending:false}),
       sb.from('quotes').select('*').order('uploaded_at',{ascending:false}),
       sb.from('forecasts').select('*'),
+      sb.from('wip_jobs').select('*, wip_staff_tasks(*)').order('created_at',{ascending:false}),
     ]);
-    users=u||[];activities=a||[];deals=d||[];quotes=q||[];
+    users=u||[];activities=a||[];deals=d||[];quotes=q||[];wipJobs=wj||[];
     forecasts={};
     (f||[]).forEach(row=>{
       if(!forecasts[row.rep_name])forecasts[row.rep_name]={};
@@ -401,6 +425,7 @@ async function doLogin(){
     document.getElementById('topbar-name').textContent=currentUser.name;
     const rb=document.getElementById('topbar-role');rb.className='role-pill '+rolePillClass(currentUser.role);
     rb.innerHTML=`<i class="ti ti-${currentUser.role==='super_admin'?'shield-check':currentUser.role==='admin'?'shield':'user'}"></i> ${roleLabel(currentUser.role)}`;
+    document.getElementById('tab-wip-btn').style.display=isAdmin()?'':'none';
     document.getElementById('tab-users-btn').style.display=isSuperAdmin()?'':'none';
     await loadAllData();
     switchTab('dashboard');
@@ -409,7 +434,7 @@ async function doLogin(){
 }
 
 function doLogout(){
-  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};
+  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];
   document.getElementById('login-screen').style.display='block';
   document.getElementById('main-app').style.display='none';
   document.getElementById('login-user').value='';document.getElementById('login-pass').value='';
@@ -420,7 +445,7 @@ function doLogout(){
 // TABS
 // ═══════════════════════════════════════════════════════════════
 function switchTab(t){
-  const names=['dashboard','deals','forecast','eod','conversion','activity','pipeline','users'];
+  const names=['dashboard','deals','forecast','eod','conversion','activity','pipeline','wip','users'];
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',names[i]===t));
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   const p=document.getElementById('tab-'+t);if(p)p.classList.add('active');
@@ -432,6 +457,7 @@ function switchTab(t){
   if(t==='conversion')renderConversion();
   if(t==='activity')renderActivity();
   if(t==='pipeline')renderPipeline();
+  if(t==='wip')renderWIP();
   if(t==='users')renderUsers();
 }
 
@@ -791,7 +817,7 @@ function renderConversion(){
 function populateFilters(){
   const names=repNames();
   ['act-rep','pipe-rep'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML='<option value="">All reps</option>'+names.map(n=>`<option${cur===n?' selected':''}>${n}</option>`).join('');});
-  const at=document.getElementById('act-type');if(at)at.innerHTML='<option value="">All types</option>'+TYPES.map(t=>`<option>${t}</option>`).join('');
+  const at=document.getElementById('act-type');if(at){const curT=at.value;at.innerHTML='<option value="">All types</option>'+TYPES.map(t=>`<option${curT===t?' selected':''}>${t}</option>`).join('');}
   const ps=document.getElementById('pipe-stage');if(ps)ps.innerHTML='<option value="">All stages</option>'+STAGES.map(s=>`<option>${s}</option>`).join('');
 }
 
@@ -804,7 +830,7 @@ function renderActivity(){
   f.sort((a,b)=>b.date.localeCompare(a.date));
   const tb=document.getElementById('act-body');
   if(!f.length){tb.innerHTML=`<tr><td colspan="11"><div class="empty">No activities found</div></td></tr>`;return;}
-  tb.innerHTML=f.map(a=>`<tr><td>${a.date}</td><td>${a.rep}</td><td>${a.customer}</td><td>${a.company}</td><td><span class="badge b-blue">${a.type}</span></td><td title="${a.purpose}">${a.purpose}</td><td style="text-align:center">${a.mins}</td><td style="text-align:center"><span class="badge ${a.followup==='Yes'?'b-amber':'b-gray'}">${a.followup}</span></td><td>${a.fudate||'—'}</td><td title="${a.outcome}">${a.outcome}</td><td>${isAdmin()?`<div style="display:flex;gap:4px"><button class="icon-btn" onclick="openModal('editActivity',${a.id})" title="Edit activity"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="openModal('deleteActivity',${a.id})" title="Delete activity"><i class="ti ti-trash"></i></button></div>`:''}</td></tr>`).join('');
+  tb.innerHTML=f.map(a=>`<tr><td>${a.date}</td><td>${a.rep}</td><td>${a.customer}</td><td>${a.company}</td><td><span class="badge b-blue">${a.type}</span></td><td title="${a.purpose}">${a.purpose}</td><td style="text-align:center">${a.mins}</td><td style="text-align:center"><span class="badge ${a.followup==='Yes'?'b-amber':'b-gray'}">${a.followup}</span></td><td>${a.fudate||'—'}</td><td title="${a.outcome}">${a.outcome}</td><td style="white-space:nowrap;overflow:visible">${isAdmin()?`<div style="display:flex;gap:4px"><button class="icon-btn" onclick="openModal('editActivity','${a.id}')" title="Edit activity"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="openModal('deleteActivity','${a.id}')" title="Delete activity"><i class="ti ti-trash"></i></button></div>`:''}</td></tr>`).join('');
 }
 
 function renderPipeline(){
@@ -819,6 +845,107 @@ function renderPipeline(){
   document.getElementById('pipe-total').textContent=fmt(f.reduce((s,d)=>s+d.value,0));
   document.getElementById('pipe-weighted').textContent=fmt(Math.round(f.reduce((s,d)=>s+d.value*d.prob/100,0)));
   document.getElementById('pipe-count').textContent=f.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WIP TRACKER
+// ═══════════════════════════════════════════════════════════════
+function renderWIP(){
+  const search=(document.getElementById('wip-search')?.value||'').toLowerCase();
+  const statusFilter=document.getElementById('wip-status-filter')?.value||'';
+
+  const active=wipJobs.filter(j=>j.status==='Jobs On The Go');
+  const awaiting=wipJobs.filter(j=>j.status==='Awaiting Approval');
+  const complete=wipJobs.filter(j=>j.status==='Job Complete');
+  const outstanding=wipJobs.filter(j=>!j.paid_full).reduce((s,j)=>s+(j.total_amount||0)-(j.deposit_paid?(j.deposit_amount||0):0),0);
+
+  document.getElementById('wip-kpi').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Jobs On The Go</div><div class="kpi-val">${active.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Awaiting Approval</div><div class="kpi-val">${awaiting.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Jobs Complete</div><div class="kpi-val">${complete.length}</div></div>
+    <div class="kpi"><div class="kpi-label">Outstanding balance</div><div class="kpi-val">${fmt(Math.max(0,outstanding))}</div></div>`;
+
+  const filtered=wipJobs.filter(j=>{
+    if(statusFilter&&j.status!==statusFilter)return false;
+    if(search&&!((j.customer||'').toLowerCase().includes(search)||(j.nature_of_job||'').toLowerCase().includes(search)||(j.quote_number||'').toLowerCase().includes(search)||(j.sales_order||'').toLowerCase().includes(search)||(j.invoice||'').toLowerCase().includes(search)))return false;
+    return true;
+  });
+
+  const statuses=statusFilter?[statusFilter]:['Jobs On The Go','Awaiting Approval','Job Complete'];
+  const stColor={'Jobs On The Go':'b-blue','Awaiting Approval':'b-amber','Job Complete':'b-green'};
+  let h='';
+  statuses.forEach(st=>{
+    const jobs=filtered.filter(j=>j.status===st);
+    const stTotal=jobs.reduce((s,j)=>s+(j.total_amount||0),0);
+    h+=`<div class="wip-section-wrap">
+      <div class="wip-section-hd">
+        <div class="wip-section-title"><span class="badge ${stColor[st]}">${st}</span> ${jobs.length} job${jobs.length!==1?'s':''}</div>
+        <div style="font-size:12px;color:var(--text-secondary)">Total: <strong>${fmt(stTotal)}</strong></div>
+      </div>`;
+    if(!jobs.length){
+      h+=`<div class="empty" style="padding:1.5rem">No jobs in this category</div>`;
+    } else {
+      h+=`<div class="tbl-wrap"><table>
+        <colgroup>
+          <col style="width:44px"><col style="width:112px"><col style="width:162px">
+          <col style="width:68px"><col style="width:78px"><col style="width:78px">
+          <col style="width:88px"><col style="width:92px"><col style="width:92px">
+          <col style="width:64px"><col style="width:92px"><col style="width:90px">
+          <col style="width:62px"><col style="width:130px"><col style="width:64px">
+        </colgroup>
+        <thead><tr>
+          <th>#</th><th>Customer</th><th>Nature of job</th>
+          <th>Quote</th><th>Sales order</th><th>Invoice</th>
+          <th>Delivery</th><th>Total (R)</th><th>Deposit (R)</th>
+          <th>Dep paid</th><th>Balance (R)</th><th>Exp payment</th>
+          <th>Pd full</th><th>Notes / staff</th><th></th>
+        </tr></thead><tbody>`;
+      jobs.forEach(j=>{
+        const bal=(j.total_amount||0)-(j.deposit_amount||0);
+        const tasks=j.wip_staff_tasks||[];
+        const noteTxt=j.staff_notes?j.staff_notes.slice(0,24)+(j.staff_notes.length>24?'…':''):'';
+        const taskBadge=tasks.length?`<span class="badge b-blue" style="margin-top:2px;display:inline-block">${tasks.length} task${tasks.length!==1?'s':''}</span>`:'';
+        const noteTitle=j.staff_notes?` title="${j.staff_notes.replace(/"/g,'&quot;')}"`:''
+        h+=`<tr>
+          <td>${j.job_number||'—'}</td>
+          <td title="${(j.customer||'').replace(/"/g,'&quot;')}">${j.customer||'—'}</td>
+          <td title="${(j.nature_of_job||'').replace(/"/g,'&quot;')}">${j.nature_of_job||'—'}</td>
+          <td>${j.quote_number||'—'}</td>
+          <td>${j.sales_order||'—'}</td>
+          <td>${j.invoice||'—'}</td>
+          <td>${fmtDate(j.delivery_date)||'—'}</td>
+          <td>${fmt(j.total_amount||0)}</td>
+          <td>${j.deposit_amount?fmt(j.deposit_amount):'—'}</td>
+          <td style="text-align:center">${j.deposit_paid?'<i class="ti ti-check" style="color:#166534"></i>':'<i class="ti ti-x" style="color:#991b1b"></i>'}</td>
+          <td>${j.paid_full?'<span class="badge b-green">Paid</span>':fmt(Math.max(0,bal))}</td>
+          <td>${fmtDate(j.expected_payment_date)||'—'}</td>
+          <td style="text-align:center">${j.paid_full?'<i class="ti ti-check" style="color:#166534"></i>':'<i class="ti ti-x" style="color:#991b1b"></i>'}</td>
+          <td${noteTitle}>${noteTxt}${taskBadge?`${noteTxt?'<br>':''}${taskBadge}`:''}</td>
+          <td style="white-space:nowrap;overflow:visible">
+            <button class="icon-btn" onclick="openModal('wipEdit','${j.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
+            <button class="icon-btn del" onclick="openModal('wipDelete','${j.id}')" title="Delete"><i class="ti ti-trash"></i></button>
+          </td>
+        </tr>`;
+      });
+      h+=`</tbody></table></div>`;
+    }
+    h+=`</div>`;
+  });
+  document.getElementById('wip-content').innerHTML=h;
+}
+
+function addWIPStaffRow(){wipStaffRows.push({name:'',task:'',completed:false});renderWIPStaffRows();}
+function removeWIPStaffRow(i){wipStaffRows.splice(i,1);renderWIPStaffRows();}
+function renderWIPStaffRows(){
+  const c=document.getElementById('wip-staff-container');
+  if(!c)return;
+  if(!wipStaffRows.length){c.innerHTML=`<div style="font-size:12px;color:var(--text-tertiary);font-style:italic;padding:4px 0">No staff assignments added</div>`;return;}
+  c.innerHTML=wipStaffRows.map((r,i)=>`<div class="wip-staff-row">
+    <input type="text" placeholder="Staff name" value="${r.name}" oninput="wipStaffRows[${i}].name=this.value">
+    <input type="text" placeholder="Task / responsibility" value="${r.task}" oninput="wipStaffRows[${i}].task=this.value">
+    <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;white-space:nowrap"><input type="checkbox" ${r.completed?'checked':''} onchange="wipStaffRows[${i}].completed=this.checked"> Done</label>
+    <button class="icon-btn del" onclick="removeWIPStaffRow(${i})" type="button"><i class="ti ti-x"></i></button>
+  </div>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -894,6 +1021,50 @@ function openModal(mode,extra){
       <div class="form-row"><label>Outcome</label><textarea id="f-outcome"></textarea></div>
       <div class="form-2"><div class="form-row"><label>Follow-up required?</label><select id="f-fu"><option>No</option><option>Yes</option></select></div>
       <div class="form-row"><label>Follow-up date</label><input type="date" id="f-fudate"></div></div>`;
+  } else if(mode==='wipAdd'||mode==='wipEdit'){
+    const j=mode==='wipEdit'?wipJobs.find(x=>x.id===extra):{};
+    title.textContent=mode==='wipAdd'?'Add WIP job':'Edit WIP job';
+    wipStaffRows=mode==='wipEdit'?(j.wip_staff_tasks||[]).map(t=>({name:t.staff_name||'',task:t.task||'',completed:t.completed||false})):[];
+    const wipStatuses=['Jobs On The Go','Awaiting Approval','Job Complete'];
+    body.innerHTML=`
+      <div class="form-2">
+        <div class="form-row"><label>Job #</label><input type="text" id="f-jobnum" placeholder="e.g. 1" value="${j.job_number||''}"></div>
+        <div class="form-row"><label>Status</label><select id="f-wip-status">${wipStatuses.map(s=>`<option${s===(j.status||'Jobs On The Go')?' selected':''}>${s}</option>`).join('')}</select></div>
+      </div>
+      <div class="form-2">
+        <div class="form-row"><label>Customer</label><input type="text" id="f-cust" value="${j.customer||''}"></div>
+        <div class="form-row"><label>Delivery date</label><input type="date" id="f-delivery" value="${j.delivery_date||''}"></div>
+      </div>
+      <div class="form-row"><label>Nature of job</label><input type="text" id="f-nature" value="${j.nature_of_job||''}"></div>
+      <div class="form-2">
+        <div class="form-row"><label>Quote #</label><input type="text" id="f-quote" value="${j.quote_number||''}"></div>
+        <div class="form-row"><label>Sales order #</label><input type="text" id="f-so" value="${j.sales_order||''}"></div>
+      </div>
+      <div class="form-row"><label>Invoice #</label><input type="text" id="f-invoice" value="${j.invoice||''}"></div>
+      <div class="form-2">
+        <div class="form-row"><label>Total amount (R)</label><input type="number" id="f-total" min="0" step="0.01" value="${j.total_amount||''}"></div>
+        <div class="form-row"><label>Deposit amount (R)</label><input type="number" id="f-dep" min="0" step="0.01" value="${j.deposit_amount||''}"></div>
+      </div>
+      <div class="form-2">
+        <div class="form-row"><label>Expected deposit date</label><input type="date" id="f-depdate" value="${j.expected_deposit_date||''}"></div>
+        <div class="form-row"><label>Deposit paid?</label><select id="f-deppaid"><option value="false"${!j.deposit_paid?' selected':''}>No</option><option value="true"${j.deposit_paid?' selected':''}>Yes</option></select></div>
+      </div>
+      <div class="form-2">
+        <div class="form-row"><label>Expected payment date</label><input type="date" id="f-paydate" value="${j.expected_payment_date||''}"></div>
+        <div class="form-row"><label>Paid in full?</label><select id="f-paidfull"><option value="false"${!j.paid_full?' selected':''}>No</option><option value="true"${j.paid_full?' selected':''}>Yes</option></select></div>
+      </div>
+      <div class="form-row"><label>Staff responsibilities & time-frame</label><textarea id="f-staffnotes">${j.staff_notes||''}</textarea></div>
+      <div class="wip-staff-hd">
+        <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary)">Staff assignments</span>
+        <button class="btn" type="button" onclick="addWIPStaffRow()" style="font-size:12px;padding:4px 10px"><i class="ti ti-plus"></i> Add</button>
+      </div>
+      <div id="wip-staff-container"></div>`;
+    renderWIPStaffRows();
+  } else if(mode==='wipDelete'){
+    const j=wipJobs.find(x=>x.id===extra);
+    title.textContent='Remove job';
+    saveBtn.className='btn danger';saveBtn.textContent='Yes, remove';
+    body.innerHTML=`<div class="confirm-box"><i class="ti ti-alert-triangle"></i> Remove job <strong>${j.nature_of_job}</strong> for <strong>${j.customer}</strong>? This cannot be undone.</div>`;
   }
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -940,6 +1111,30 @@ async function saveModal(){
     } else if(modalMode==='activity'){
       const row=await dbInsert('activities',{date:g('f-date'),rep:g('f-rep'),customer:g('f-cust'),company:g('f-company'),type:g('f-type'),purpose:g('f-purpose'),mins:parseInt(g('f-mins'))||0,followup:g('f-fu'),fudate:g('f-fudate')||null,outcome:g('f-outcome')});
       activities.unshift(row);toast('Activity logged');closeModal();renderActivity();
+    } else if(modalMode==='wipAdd'){
+      const depPaid=document.getElementById('f-deppaid').value==='true';
+      const paidFull=document.getElementById('f-paidfull').value==='true';
+      const row=await dbInsert('wip_jobs',{job_number:g('f-jobnum')||null,status:g('f-wip-status'),customer:g('f-cust'),nature_of_job:g('f-nature'),delivery_date:g('f-delivery')||null,quote_number:g('f-quote')||null,sales_order:g('f-so')||null,invoice:g('f-invoice')||null,total_amount:parseFloat(g('f-total'))||0,deposit_amount:parseFloat(g('f-dep'))||0,expected_deposit_date:g('f-depdate')||null,deposit_paid:depPaid,expected_payment_date:g('f-paydate')||null,paid_full:paidFull,staff_notes:g('f-staffnotes')||null});
+      const tasks=wipStaffRows.filter(r=>r.name.trim());
+      if(tasks.length){await sb.from('wip_staff_tasks').insert(tasks.map(r=>({job_id:row.id,staff_name:r.name,task:r.task,completed:r.completed})));}
+      row.wip_staff_tasks=tasks.map(r=>({staff_name:r.name,task:r.task,completed:r.completed}));
+      wipJobs.unshift(row);toast('Job added');closeModal();renderWIP();
+    } else if(modalMode==='wipEdit'){
+      const depPaid=document.getElementById('f-deppaid').value==='true';
+      const paidFull=document.getElementById('f-paidfull').value==='true';
+      const updates={job_number:g('f-jobnum')||null,status:g('f-wip-status'),customer:g('f-cust'),nature_of_job:g('f-nature'),delivery_date:g('f-delivery')||null,quote_number:g('f-quote')||null,sales_order:g('f-so')||null,invoice:g('f-invoice')||null,total_amount:parseFloat(g('f-total'))||0,deposit_amount:parseFloat(g('f-dep'))||0,expected_deposit_date:g('f-depdate')||null,deposit_paid:depPaid,expected_payment_date:g('f-paydate')||null,paid_full:paidFull,staff_notes:g('f-staffnotes')||null};
+      await dbUpdate('wip_jobs',targetId,updates);
+      await sb.from('wip_staff_tasks').delete().eq('job_id',targetId);
+      const tasks=wipStaffRows.filter(r=>r.name.trim());
+      if(tasks.length){await sb.from('wip_staff_tasks').insert(tasks.map(r=>({job_id:targetId,staff_name:r.name,task:r.task,completed:r.completed})));}
+      const j=wipJobs.find(x=>x.id===targetId);Object.assign(j,updates);
+      j.wip_staff_tasks=tasks.map(r=>({staff_name:r.name,task:r.task,completed:r.completed}));
+      toast('Job updated');closeModal();renderWIP();
+    } else if(modalMode==='wipDelete'){
+      await sb.from('wip_staff_tasks').delete().eq('job_id',targetId);
+      await dbDelete('wip_jobs',targetId);
+      wipJobs=wipJobs.filter(j=>j.id!==targetId);
+      toast('Job removed');closeModal();renderWIP();
     }
   }catch(e){toast('Save failed: '+e.message,'err');console.error(e);}
   saveBtn.disabled=false;
