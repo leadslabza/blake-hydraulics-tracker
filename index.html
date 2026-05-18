@@ -167,6 +167,13 @@ tr:hover td{background:var(--bg-secondary)}
 .overdue{color:var(--danger-text);font-weight:600}
 .due-soon{color:var(--warn-text);font-weight:500}
 @media(max-width:640px){.two-col{grid-template-columns:1fr}.form-2{grid-template-columns:1fr}.shell{padding:12px}.fc-targets{grid-template-columns:1fr}.deals-grid{grid-template-columns:1fr}}
+/* ── ROW / CARD CLICK ── */
+.row-link{cursor:pointer}
+.row-link:hover td{background:var(--info-bg)!important}
+.detail-grid{display:grid;grid-template-columns:140px 1fr;gap:8px 16px;font-size:13px;line-height:1.6}
+.detail-label{color:var(--text-secondary);font-weight:500;font-size:12px;padding-top:1px}
+.detail-sep{grid-column:1/-1;border-top:0.5px solid var(--border-light);margin:4px 0}
+.detail-full{grid-column:1/-1}
 /* ── WIP TRACKER ── */
 .wip-section-wrap{margin-bottom:24px}
 .wip-section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:10px 14px;background:var(--bg-secondary);border-radius:var(--radius-md);border:0.5px solid var(--border-light)}
@@ -549,7 +556,7 @@ function renderDeals(){
     const closeClass=days===null?'':days<0?'overdue':days<=7?'due-soon':'';
     const closeLabel=days===null?'No close date':days<0?`${Math.abs(days)}d overdue`:days===0?'Due today':days<=7?`Due in ${days}d`:`Close ${fmtDate(d.close)}`;
     h+=`<div class="deal-card">
-      <div class="deal-card-top">
+      <div class="deal-card-top" style="cursor:pointer" onclick="openModal('viewDeal','${d.id}')">
         <div class="deal-card-hd">
           <div style="flex:1;min-width:0">
             <div class="deal-opp">${d.opportunity}</div>
@@ -567,9 +574,9 @@ function renderDeals(){
       <div class="deal-card-body">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div class="section-hd" style="margin-bottom:0">Quotes (${qs.length})</div>
-          ${isAdmin()?`<label style="cursor:pointer" title="Upload PDF quote">
+          ${isAdmin()?`<label style="cursor:pointer" title="Upload PDF quote" onclick="event.stopPropagation()">
             <div class="btn success" style="font-size:12px;padding:4px 10px"><i class="ti ti-upload"></i> Upload PDF</div>
-            <input type="file" accept=".pdf,application/pdf" style="display:none" onchange="handleUpload(event,${d.id})">
+            <input type="file" accept=".pdf,application/pdf" style="display:none" onchange="handleUpload(event,'${d.id}')">
           </label>`:''}
         </div>
         ${qs.length?qs.map(q=>`<div class="quote-item">
@@ -583,8 +590,8 @@ function renderDeals(){
       </div>
       <div class="deal-card-footer">
         <div style="display:flex;gap:6px">
-          <button class="btn" style="font-size:12px" onclick="openModal('editDeal',${d.id})"><i class="ti ti-edit"></i> Edit</button>
-          ${isAdmin()?`<button class="icon-btn del" onclick="openModal('deleteDeal',${d.id})" title="Delete deal"><i class="ti ti-trash"></i></button>`:''}
+          <button class="btn" style="font-size:12px" onclick="event.stopPropagation();openModal('editDeal','${d.id}')"><i class="ti ti-edit"></i> Edit</button>
+          ${isAdmin()?`<button class="icon-btn del" onclick="event.stopPropagation();openModal('deleteDeal','${d.id}')" title="Delete deal"><i class="ti ti-trash"></i></button>`:''}
         </div>
         <div style="font-size:12px;color:var(--text-secondary)">Weighted: ${fmt(Math.round(d.value*d.prob/100))}</div>
       </div>
@@ -830,7 +837,7 @@ function renderActivity(){
   f.sort((a,b)=>b.date.localeCompare(a.date));
   const tb=document.getElementById('act-body');
   if(!f.length){tb.innerHTML=`<tr><td colspan="11"><div class="empty">No activities found</div></td></tr>`;return;}
-  tb.innerHTML=f.map(a=>`<tr><td>${a.date}</td><td>${a.rep}</td><td>${a.customer}</td><td>${a.company}</td><td><span class="badge b-blue">${a.type}</span></td><td title="${a.purpose}">${a.purpose}</td><td style="text-align:center">${a.mins}</td><td style="text-align:center"><span class="badge ${a.followup==='Yes'?'b-amber':'b-gray'}">${a.followup}</span></td><td>${a.fudate||'—'}</td><td title="${a.outcome}">${a.outcome}</td><td style="white-space:nowrap;overflow:visible">${isAdmin()?`<div style="display:flex;gap:4px"><button class="icon-btn" onclick="openModal('editActivity','${a.id}')" title="Edit activity"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="openModal('deleteActivity','${a.id}')" title="Delete activity"><i class="ti ti-trash"></i></button></div>`:''}</td></tr>`).join('');
+  tb.innerHTML=f.map(a=>`<tr class="row-link" onclick="openModal('viewActivity','${a.id}')"><td>${fmtDate(a.date)}</td><td>${a.rep}</td><td>${a.customer}</td><td>${a.company}</td><td><span class="badge b-blue">${a.type}</span></td><td title="${a.purpose}">${a.purpose}</td><td style="text-align:center">${a.mins}</td><td style="text-align:center"><span class="badge ${a.followup==='Yes'?'b-amber':'b-gray'}">${a.followup}</span></td><td>${fmtDate(a.fudate)||'—'}</td><td title="${a.outcome}">${a.outcome}</td><td style="white-space:nowrap;overflow:visible">${isAdmin()?`<div style="display:flex;gap:4px"><button class="icon-btn" onclick="event.stopPropagation();openModal('editActivity','${a.id}')" title="Edit activity"><i class="ti ti-edit"></i></button><button class="icon-btn del" onclick="event.stopPropagation();openModal('deleteActivity','${a.id}')" title="Delete activity"><i class="ti ti-trash"></i></button></div>`:''}</td></tr>`).join('');
 }
 
 function renderPipeline(){
@@ -841,7 +848,7 @@ function renderPipeline(){
   if(isRep())f=f.filter(d=>d.rep===currentUser.name);
   const tb=document.getElementById('pipe-body');const admin=isAdmin();
   if(!f.length){tb.innerHTML=`<tr><td colspan="12"><div class="empty">No deals found</div></td></tr>`;}
-  else tb.innerHTML=f.map(d=>{const qs=quotesForDeal(d.id);return`<tr><td>${d.rep}</td><td>${d.customer}</td><td>${d.company}</td><td title="${d.opportunity}">${d.opportunity}</td><td><span class="badge ${SC[d.stage]||'b-gray'}">${d.stage}</span></td><td style="text-align:right">${fmt(d.value)}</td><td style="text-align:center">${d.prob}%</td><td style="text-align:right">${fmt(Math.round(d.value*d.prob/100))}</td><td>${d.close||'—'}</td><td><span class="badge ${d.status==='Won'?'b-green':d.status==='Lost'?'b-coral':'b-blue'}">${d.status}</span></td><td style="text-align:center">${qs.length?`<span class="badge b-green" style="cursor:pointer" onclick="switchTab('deals')" title="View in Deals tab">${qs.length} PDF${qs.length!==1?'s':''}</span>`:`<span style="font-size:11px;color:var(--text-tertiary)">None</span>`}</td><td><button class="icon-btn del" onclick="openModal('deleteDeal',${d.id})" ${admin?'':'disabled'} title="${admin?'Delete deal':'Admin only'}"><i class="ti ti-trash"></i></button></td></tr>`;}).join('');
+  else tb.innerHTML=f.map(d=>{const qs=quotesForDeal(d.id);return`<tr class="row-link" onclick="openModal('viewDeal','${d.id}')"><td>${d.rep}</td><td>${d.customer}</td><td>${d.company}</td><td title="${d.opportunity}">${d.opportunity}</td><td><span class="badge ${SC[d.stage]||'b-gray'}">${d.stage}</span></td><td style="text-align:right">${fmt(d.value)}</td><td style="text-align:center">${d.prob}%</td><td style="text-align:right">${fmt(Math.round(d.value*d.prob/100))}</td><td>${fmtDate(d.close)||'—'}</td><td><span class="badge ${d.status==='Won'?'b-green':d.status==='Lost'?'b-coral':'b-blue'}">${d.status}</span></td><td style="text-align:center">${qs.length?`<span class="badge b-green" style="cursor:pointer" onclick="event.stopPropagation();switchTab('deals')" title="View in Deals tab">${qs.length} PDF${qs.length!==1?'s':''}</span>`:`<span style="font-size:11px;color:var(--text-tertiary)">None</span>`}</td><td style="overflow:visible"><button class="icon-btn del" onclick="event.stopPropagation();openModal('deleteDeal','${d.id}')" ${admin?'':'disabled'} title="${admin?'Delete deal':'Admin only'}"><i class="ti ti-trash"></i></button></td></tr>`;}).join('');
   document.getElementById('pipe-total').textContent=fmt(f.reduce((s,d)=>s+d.value,0));
   document.getElementById('pipe-weighted').textContent=fmt(Math.round(f.reduce((s,d)=>s+d.value*d.prob/100,0)));
   document.getElementById('pipe-count').textContent=f.length;
@@ -906,7 +913,7 @@ function renderWIP(){
         const noteTxt=j.staff_notes?j.staff_notes.slice(0,24)+(j.staff_notes.length>24?'…':''):'';
         const taskBadge=tasks.length?`<span class="badge b-blue" style="margin-top:2px;display:inline-block">${tasks.length} task${tasks.length!==1?'s':''}</span>`:'';
         const noteTitle=j.staff_notes?` title="${j.staff_notes.replace(/"/g,'&quot;')}"`:''
-        h+=`<tr>
+        h+=`<tr class="row-link" onclick="openModal('viewWIP','${j.id}')">
           <td>${j.job_number||'—'}</td>
           <td title="${(j.customer||'').replace(/"/g,'&quot;')}">${j.customer||'—'}</td>
           <td title="${(j.nature_of_job||'').replace(/"/g,'&quot;')}">${j.nature_of_job||'—'}</td>
@@ -922,8 +929,8 @@ function renderWIP(){
           <td style="text-align:center">${j.paid_full?'<i class="ti ti-check" style="color:#166534"></i>':'<i class="ti ti-x" style="color:#991b1b"></i>'}</td>
           <td${noteTitle}>${noteTxt}${taskBadge?`${noteTxt?'<br>':''}${taskBadge}`:''}</td>
           <td style="white-space:nowrap;overflow:visible">
-            <button class="icon-btn" onclick="openModal('wipEdit','${j.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
-            <button class="icon-btn del" onclick="openModal('wipDelete','${j.id}')" title="Delete"><i class="ti ti-trash"></i></button>
+            <button class="icon-btn" onclick="event.stopPropagation();openModal('wipEdit','${j.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
+            <button class="icon-btn del" onclick="event.stopPropagation();openModal('wipDelete','${j.id}')" title="Delete"><i class="ti ti-trash"></i></button>
           </td>
         </tr>`;
       });
@@ -1065,6 +1072,72 @@ function openModal(mode,extra){
     title.textContent='Remove job';
     saveBtn.className='btn danger';saveBtn.textContent='Yes, remove';
     body.innerHTML=`<div class="confirm-box"><i class="ti ti-alert-triangle"></i> Remove job <strong>${j.nature_of_job}</strong> for <strong>${j.customer}</strong>? This cannot be undone.</div>`;
+  } else if(mode==='viewActivity'){
+    const a=activities.find(x=>x.id===extra);
+    title.textContent='Activity details';saveBtn.style.display='none';
+    body.innerHTML=`<div class="detail-grid">
+      <span class="detail-label">Date</span><span>${fmtDate(a.date)}</span>
+      <span class="detail-label">Rep</span><span>${a.rep}</span>
+      <div class="detail-sep"></div>
+      <span class="detail-label">Customer</span><span>${a.customer||'—'}</span>
+      <span class="detail-label">Company</span><span>${a.company||'—'}</span>
+      <div class="detail-sep"></div>
+      <span class="detail-label">Type</span><span><span class="badge b-blue">${a.type}</span></span>
+      <span class="detail-label">Duration</span><span>${a.mins} mins</span>
+      <span class="detail-label">Follow-up</span><span><span class="badge ${a.followup==='Yes'?'b-amber':'b-gray'}">${a.followup}</span></span>
+      <span class="detail-label">Follow-up date</span><span>${fmtDate(a.fudate)||'—'}</span>
+      <div class="detail-sep"></div>
+      <span class="detail-label">Purpose</span><span style="white-space:pre-wrap">${a.purpose||'—'}</span>
+      <div class="detail-sep"></div>
+      <span class="detail-label">Outcome</span><span style="white-space:pre-wrap">${a.outcome||'—'}</span>
+    </div>`;
+  } else if(mode==='viewDeal'){
+    const d=deals.find(x=>x.id===extra);
+    const qs=quotesForDeal(d.id);
+    title.textContent='Deal details';saveBtn.style.display='none';
+    body.innerHTML=`<div class="detail-grid">
+      <span class="detail-label">Customer</span><span>${d.customer||'—'}</span>
+      <span class="detail-label">Company</span><span>${d.company||'—'}</span>
+      <span class="detail-label">Rep</span><span>${d.rep||'—'}</span>
+      <span class="detail-label">Stage</span><span><span class="badge ${SC[d.stage]||'b-gray'}">${d.stage}</span></span>
+      <div class="detail-sep"></div>
+      <span class="detail-label">Opportunity</span><span style="white-space:pre-wrap">${d.opportunity||'—'}</span>
+      <div class="detail-sep"></div>
+      <span class="detail-label">Deal value</span><span>${fmt(d.value)}</span>
+      <span class="detail-label">Probability</span><span>${d.prob}%</span>
+      <span class="detail-label">Weighted value</span><span>${fmt(Math.round(d.value*d.prob/100))}</span>
+      <span class="detail-label">Status</span><span><span class="badge ${d.status==='Won'?'b-green':d.status==='Lost'?'b-coral':'b-blue'}">${d.status}</span></span>
+      <span class="detail-label">Close date</span><span>${fmtDate(d.close)||'—'}</span>
+      <div class="detail-sep"></div>
+      <span class="detail-label">Quotes</span><span>${qs.length?qs.map(q=>`<a href="${q.public_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:var(--accent);text-decoration:none;font-size:12px;margin-bottom:4px"><i class="ti ti-file-type-pdf" style="color:#C0392B"></i>${q.file_name}</a>`).join('<br>'):'No quotes uploaded'}</span>
+    </div>`;
+  } else if(mode==='viewWIP'){
+    const j=wipJobs.find(x=>x.id===extra);
+    const tasks=j.wip_staff_tasks||[];
+    const bal=Math.max(0,(j.total_amount||0)-(j.deposit_amount||0));
+    title.textContent='WIP job details';saveBtn.style.display='none';
+    body.innerHTML=`<div class="detail-grid">
+      <span class="detail-label">Job #</span><span>${j.job_number||'—'}</span>
+      <span class="detail-label">Status</span><span><span class="badge ${'Jobs On The Go'===j.status?'b-blue':'Awaiting Approval'===j.status?'b-amber':'b-green'}">${j.status}</span></span>
+      <span class="detail-label">Customer</span><span>${j.customer||'—'}</span>
+      <span class="detail-label">Delivery date</span><span>${fmtDate(j.delivery_date)||'—'}</span>
+      <div class="detail-sep"></div>
+      <span class="detail-label">Nature of job</span><span style="white-space:pre-wrap">${j.nature_of_job||'—'}</span>
+      <div class="detail-sep"></div>
+      <span class="detail-label">Quote #</span><span>${j.quote_number||'—'}</span>
+      <span class="detail-label">Sales order #</span><span>${j.sales_order||'—'}</span>
+      <span class="detail-label">Invoice #</span><span>${j.invoice||'—'}</span>
+      <div class="detail-sep"></div>
+      <span class="detail-label">Total amount</span><span>${fmt(j.total_amount||0)}</span>
+      <span class="detail-label">Deposit amount</span><span>${j.deposit_amount?fmt(j.deposit_amount):'—'}</span>
+      <span class="detail-label">Exp deposit date</span><span>${fmtDate(j.expected_deposit_date)||'—'}</span>
+      <span class="detail-label">Deposit paid</span><span>${j.deposit_paid?'<span class="badge b-green">Yes</span>':'<span class="badge b-gray">No</span>'}</span>
+      <span class="detail-label">Balance</span><span>${j.paid_full?'<span class="badge b-green">Paid in full</span>':fmt(bal)}</span>
+      <span class="detail-label">Exp payment date</span><span>${fmtDate(j.expected_payment_date)||'—'}</span>
+      <span class="detail-label">Paid in full</span><span>${j.paid_full?'<span class="badge b-green">Yes</span>':'<span class="badge b-gray">No</span>'}</span>
+      ${j.staff_notes?`<div class="detail-sep"></div><span class="detail-label">Notes</span><span style="white-space:pre-wrap">${j.staff_notes}</span>`:''}
+      ${tasks.length?`<div class="detail-sep"></div><span class="detail-label" style="padding-top:4px">Staff</span><span>${tasks.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="badge ${t.completed?'b-green':'b-gray'}" style="flex-shrink:0">${t.completed?'Done':'Pending'}</span><span style="font-size:12px"><strong>${t.staff_name}</strong>${t.task?' — '+t.task:''}</span></div>`).join('')}</span>`:''}
+    </div>`;
   }
   document.getElementById('modal-overlay').classList.add('open');
 }
