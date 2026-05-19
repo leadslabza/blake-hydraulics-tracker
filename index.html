@@ -167,6 +167,23 @@ tr:hover td{background:var(--bg-secondary)}
 .overdue{color:var(--danger-text);font-weight:600}
 .due-soon{color:var(--warn-text);font-weight:500}
 @media(max-width:640px){.two-col{grid-template-columns:1fr}.form-2{grid-template-columns:1fr}.shell{padding:12px}.fc-targets{grid-template-columns:1fr}.deals-grid{grid-template-columns:1fr}}
+/* ── CASHFLOW ── */
+.cf-range-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.cf-range-btn{padding:5px 12px;font-size:12px;border-radius:var(--radius-md);border:0.5px solid var(--border-mid);background:var(--bg-primary);cursor:pointer;color:var(--text-secondary);font-family:inherit;transition:all .15s}
+.cf-range-btn:hover{background:var(--bg-secondary);color:var(--text-primary)}
+.cf-range-btn.active{background:var(--accent);color:#fff;border-color:transparent}
+.cf-date-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.cf-date-row label{font-size:12px;font-weight:500;color:var(--text-secondary);white-space:nowrap}
+.cf-chart-wrap{margin:20px 0}
+.cf-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12px}
+.cf-bar-label{width:145px;flex-shrink:0;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cf-bar-track{flex:1;background:var(--bg-tertiary);border-radius:4px;height:26px;overflow:hidden;position:relative;display:flex}
+.cf-bar-deposit{height:100%;background:#0d9488;transition:width .4s}
+.cf-bar-balance{height:100%;background:var(--accent);transition:width .4s}
+.cf-bar-value{width:110px;text-align:right;flex-shrink:0;font-weight:500;color:var(--text-primary)}
+.cf-legend{display:flex;gap:16px;font-size:12px;margin-bottom:16px;flex-wrap:wrap}
+.cf-legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.cf-overdue{background:var(--warn-bg);color:var(--warn-text)}
 /* ── ROW / CARD CLICK ── */
 .row-link{cursor:pointer}
 .row-link:hover td{background:var(--info-bg)!important}
@@ -180,6 +197,24 @@ tr:hover td{background:var(--bg-secondary)}
 .wip-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
 .wip-staff-row{display:grid;grid-template-columns:140px 1fr auto auto;gap:6px;align-items:center;margin-bottom:6px}
 .wip-staff-hd{display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px;padding-top:12px;border-top:0.5px solid var(--border-light)}
+/* ── TEAM PLANNER ── */
+.planner-wrap{overflow-x:auto}
+.planner-table{width:100%;border-collapse:collapse;min-width:700px}
+.planner-table th,.planner-table td{border:0.5px solid var(--border-light);padding:0;vertical-align:top}
+.planner-table thead th{background:var(--bg-secondary);padding:10px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);white-space:nowrap;text-align:center}
+.planner-table thead th:first-child{text-align:left;min-width:120px;width:120px}
+.planner-staff-cell{padding:8px 12px;font-size:12px;font-weight:600;background:var(--bg-secondary);vertical-align:middle;white-space:nowrap;min-width:120px;width:120px}
+.planner-day-cell{min-width:130px;padding:6px;position:relative}
+.planner-entry{background:var(--info-bg);border:0.5px solid var(--info-border);border-radius:6px;padding:6px 8px;margin-bottom:5px;font-size:11px;line-height:1.4;cursor:pointer;transition:box-shadow .15s;position:relative}
+.planner-entry:hover{box-shadow:0 1px 6px rgba(0,0,0,.12)}
+.planner-entry-title{font-weight:600;color:var(--info-text);margin-bottom:2px;padding-right:18px}
+.planner-entry-sub{color:var(--text-secondary);font-size:10px}
+.planner-entry-del{position:absolute;top:4px;right:4px;border:none;background:none;cursor:pointer;color:var(--text-tertiary);font-size:13px;line-height:1;padding:1px;border-radius:3px}
+.planner-entry-del:hover{background:var(--danger-bg);color:var(--danger-text)}
+.planner-add-btn{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:5px;font-size:11px;color:var(--text-tertiary);background:none;border:0.5px dashed var(--border-mid);border-radius:6px;cursor:pointer;transition:all .15s;font-family:inherit}
+.planner-add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--info-bg)}
+.planner-day-today th,.planner-day-today td{background:var(--info-bg)!important}
+.week-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 </style>
 </head>
 <body>
@@ -228,6 +263,8 @@ tr:hover td{background:var(--bg-secondary)}
       <button class="tab" onclick="switchTab('activity')"><i class="ti ti-calendar"></i> Activity log</button>
       <button class="tab" onclick="switchTab('pipeline')"><i class="ti ti-arrow-right"></i> Pipeline</button>
       <button class="tab" id="tab-wip-btn" style="display:none" onclick="switchTab('wip')"><i class="ti ti-clipboard-list"></i> WIP Tracker</button>
+      <button class="tab" id="tab-cashflow-btn" style="display:none" onclick="switchTab('cashflow')"><i class="ti ti-cash"></i> Cashflow</button>
+      <button class="tab" id="tab-planner-btn" style="display:none" onclick="switchTab('planner')"><i class="ti ti-calendar-week"></i> Team Planner</button>
       <button class="tab" id="tab-users-btn" style="display:none" onclick="switchTab('users')"><i class="ti ti-shield-lock"></i> Users</button>
     </div>
 
@@ -286,6 +323,14 @@ tr:hover td{background:var(--bg-secondary)}
       <div id="wip-content"></div>
     </div>
 
+    <div id="tab-cashflow" class="panel">
+      <div id="cashflow-content"></div>
+    </div>
+
+    <div id="tab-planner" class="panel">
+      <div id="planner-content"></div>
+    </div>
+
     <div id="tab-users" class="panel"><div id="users-content"></div></div>
   </div>
 </div>
@@ -316,6 +361,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ═══════════════════════════════════════════════════════════════
 const TYPES=["Site Visit","Phone Call","Video Call","Email","Trade Show","Demo"];
 const STAGES=["Qualified","Quote","Quote Sent","Approved","PO Received","Closed Won","Closed Lost"];
+const DAY_NAMES=["Monday","Tuesday","Wednesday","Thursday","Friday"];
+const DAY_SHORT=["Mon","Tue","Wed","Thu","Fri"];
 const SC={"Qualified":"b-blue","Quote":"b-amber","Quote Sent":"b-purple","Approved":"b-teal","PO Received":"b-green","Closed Won":"b-green","Closed Lost":"b-coral"};
 const DP={"Qualified":20,"Quote":35,"Quote Sent":50,"Approved":75,"PO Received":90,"Closed Won":100,"Closed Lost":0};
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -329,6 +376,7 @@ let currentUser=null;
 let users=[], activities=[], deals=[], quotes=[], forecasts={}, wipJobs=[];
 let modalMode='', targetId=null;
 let wipStaffRows=[];
+let plannerEntries=[], plannerWeekStart=null, teamMembers=[];
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -356,6 +404,12 @@ const wonForRepMonth=(rn,mk)=>deals.filter(d=>d.rep===rn&&d.status==='Won'&&d.cl
 const weightedForRep=rn=>deals.filter(d=>d.rep===rn&&d.status==='Active').reduce((s,d)=>s+d.value*d.prob/100,0);
 const quotesForDeal=dealId=>quotes.filter(q=>q.deal_id===dealId);
 const daysUntil=d=>{if(!d)return null;return Math.ceil((new Date(d)-new Date(today()))/86400000)};
+const addDays=(dateStr,n)=>{const d=new Date(dateStr);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const fmtMonth=d=>{const p=d.split('-');return`${MONTHS[parseInt(p[1])-1]} ${p[0]}`};
+function getMondayOf(dateStr){const d=new Date(dateStr);const day=d.getDay();const diff=(day===0?-6:1-day);d.setDate(d.getDate()+diff);return d.toISOString().slice(0,10);}
+function plannerPrevWeek(){plannerWeekStart=addDays(plannerWeekStart,-7);renderPlanner();}
+function plannerNextWeek(){plannerWeekStart=addDays(plannerWeekStart,7);renderPlanner();}
+function plannerThisWeek(){plannerWeekStart=getMondayOf(today());renderPlanner();}
 
 function getFC(rn,mk){
   if(!forecasts[rn])forecasts[rn]={};
@@ -374,15 +428,17 @@ function toast(msg,type='ok'){const t=document.getElementById('toast');t.textCon
 async function loadAllData(){
   showLoading('Loading data…');
   try{
-    const[{data:u},{data:a},{data:d},{data:q},{data:f},{data:wj}]=await Promise.all([
+    const[{data:u},{data:a},{data:d},{data:q},{data:f},{data:wj},{data:pe},{data:tm}]=await Promise.all([
       sb.from('users').select('*').order('name'),
       sb.from('activities').select('*').order('date',{ascending:false}),
       sb.from('deals').select('*').order('created_at',{ascending:false}),
       sb.from('quotes').select('*').order('uploaded_at',{ascending:false}),
       sb.from('forecasts').select('*'),
       sb.from('wip_jobs').select('*, wip_staff_tasks(*)').order('created_at',{ascending:false}),
+      sb.from('team_planner').select('*').order('week_start').order('day_index'),
+      sb.from('team_members').select('*').order('name'),
     ]);
-    users=u||[];activities=a||[];deals=d||[];quotes=q||[];wipJobs=wj||[];
+    users=u||[];activities=a||[];deals=d||[];quotes=q||[];wipJobs=wj||[];plannerEntries=pe||[];teamMembers=tm||[];
     forecasts={};
     (f||[]).forEach(row=>{
       if(!forecasts[row.rep_name])forecasts[row.rep_name]={};
@@ -433,6 +489,8 @@ async function doLogin(){
     const rb=document.getElementById('topbar-role');rb.className='role-pill '+rolePillClass(currentUser.role);
     rb.innerHTML=`<i class="ti ti-${currentUser.role==='super_admin'?'shield-check':currentUser.role==='admin'?'shield':'user'}"></i> ${roleLabel(currentUser.role)}`;
     document.getElementById('tab-wip-btn').style.display=isAdmin()?'':'none';
+    document.getElementById('tab-cashflow-btn').style.display=isAdmin()?'':'none';
+    document.getElementById('tab-planner-btn').style.display=isAdmin()?'':'none';
     document.getElementById('tab-users-btn').style.display=isSuperAdmin()?'':'none';
     await loadAllData();
     switchTab('dashboard');
@@ -441,7 +499,7 @@ async function doLogin(){
 }
 
 function doLogout(){
-  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];
+  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];plannerEntries=[];plannerWeekStart=null;teamMembers=[];
   document.getElementById('login-screen').style.display='block';
   document.getElementById('main-app').style.display='none';
   document.getElementById('login-user').value='';document.getElementById('login-pass').value='';
@@ -452,7 +510,7 @@ function doLogout(){
 // TABS
 // ═══════════════════════════════════════════════════════════════
 function switchTab(t){
-  const names=['dashboard','deals','forecast','eod','conversion','activity','pipeline','wip','users'];
+  const names=['dashboard','deals','forecast','eod','conversion','activity','pipeline','wip','cashflow','planner','users'];
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',names[i]===t));
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   const p=document.getElementById('tab-'+t);if(p)p.classList.add('active');
@@ -465,6 +523,8 @@ function switchTab(t){
   if(t==='activity')renderActivity();
   if(t==='pipeline')renderPipeline();
   if(t==='wip')renderWIP();
+  if(t==='cashflow')renderCashflow();
+  if(t==='planner')renderPlanner();
   if(t==='users')renderUsers();
 }
 
@@ -797,6 +857,121 @@ function buildPDFDoc(rn){
 function downloadPDF(rn){buildPDFDoc(rn).save(`EOD_${rn.replace(/ /g,'_')}_${document.getElementById('eod-date')?.value||today()}.pdf`);}
 function downloadAllPDFs(){reps().forEach(r=>downloadPDF(r.name));}
 
+function downloadCashflowPDF(){
+  const fromVal=document.getElementById('cf-from')?.value||today();
+  const toVal=document.getElementById('cf-to')?.value||addDays(today(),29);
+  buildCashflowPDF(fromVal,toVal).save(`Cashflow_${fromVal}_to_${toVal}.pdf`);
+}
+
+function buildCashflowPDF(fromVal,toVal){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const mg=18,cW=210-mg*2;let y=mg;
+  const NAVY=[15,40,80],LG=[245,247,250],MG=[180,185,195],BK=[20,20,20],MI=[80,90,110],TEAL=[13,148,136],BLUE=[29,78,216];
+
+  // Collect events
+  const events=[];
+  wipJobs.forEach(j=>{
+    if(!j.deposit_paid&&j.deposit_amount>0&&j.expected_deposit_date&&j.expected_deposit_date>=fromVal&&j.expected_deposit_date<=toVal)
+      events.push({date:j.expected_deposit_date,customer:j.customer||'—',nature:j.nature_of_job||'—',invoice:j.invoice||'—',amount:j.deposit_amount,type:'Deposit',overdue:j.expected_deposit_date<today()});
+    if(!j.paid_full&&j.expected_payment_date&&j.expected_payment_date>=fromVal&&j.expected_payment_date<=toVal){
+      const bal=Math.max(0,(j.total_amount||0)-(j.deposit_amount||0));
+      if(bal>0)events.push({date:j.expected_payment_date,customer:j.customer||'—',nature:j.nature_of_job||'—',invoice:j.invoice||'—',amount:bal,type:'Balance',overdue:j.expected_payment_date<today()});
+    }
+  });
+  events.sort((a,b)=>a.date.localeCompare(b.date));
+  const totalAmt=events.reduce((s,e)=>s+e.amount,0);
+  const depAmt=events.filter(e=>e.type==='Deposit').reduce((s,e)=>s+e.amount,0);
+  const balAmt=events.filter(e=>e.type==='Balance').reduce((s,e)=>s+e.amount,0);
+  const overdueAmt=events.filter(e=>e.overdue).reduce((s,e)=>s+e.amount,0);
+
+  // Groups (same logic as renderCashflow)
+  const daysDiff=Math.ceil((new Date(toVal)-new Date(fromVal))/86400000)+1;
+  let groups=[];
+  if(daysDiff<=21){let d=fromVal;while(d<=toVal){const evs=events.filter(e=>e.date===d);if(evs.length)groups.push({label:fmtDate(d),events:evs,depTotal:evs.filter(e=>e.type==='Deposit').reduce((s,e)=>s+e.amount,0),balTotal:evs.filter(e=>e.type==='Balance').reduce((s,e)=>s+e.amount,0)});d=addDays(d,1);}}
+  else if(daysDiff<=90){let ws=fromVal;while(ws<=toVal){const we=addDays(ws,6)<=toVal?addDays(ws,6):toVal;const evs=events.filter(e=>e.date>=ws&&e.date<=we);if(evs.length)groups.push({label:`${fmtDate(ws)} – ${fmtDate(we)}`,events:evs,depTotal:evs.filter(e=>e.type==='Deposit').reduce((s,e)=>s+e.amount,0),balTotal:evs.filter(e=>e.type==='Balance').reduce((s,e)=>s+e.amount,0)});ws=addDays(ws,7);}}
+  else{let ms=new Date(fromVal);ms=new Date(ms.getFullYear(),ms.getMonth(),1);while(ms.toISOString().slice(0,10)<=toVal){const meDate=new Date(ms.getFullYear(),ms.getMonth()+1,0);const msStr=ms.toISOString().slice(0,10);const meStr=meDate.toISOString().slice(0,10)>toVal?toVal:meDate.toISOString().slice(0,10);const evs=events.filter(e=>e.date>=msStr&&e.date<=meStr);if(evs.length)groups.push({label:fmtMonth(msStr),events:evs,depTotal:evs.filter(e=>e.type==='Deposit').reduce((s,e)=>s+e.amount,0),balTotal:evs.filter(e=>e.type==='Balance').reduce((s,e)=>s+e.amount,0)});ms=new Date(ms.getFullYear(),ms.getMonth()+1,1);}}
+
+  function dH(){doc.setFillColor(...NAVY);doc.rect(0,0,210,14,'F');doc.setTextColor(255,255,255);doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('BLAKE HYDRAULICS',mg,9.5);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text('Cashflow Forecast',mg+54,9.5);doc.text(`Generated: ${fmtDate(today())}`,210-mg,9.5,{align:'right'});}
+  function chk(n=10){if(y+n>285){doc.addPage();y=mg;dH();}}
+  dH();y=22;
+
+  // Title banner
+  doc.setFillColor(...LG);doc.roundedRect(mg,y,cW,16,2,2,'F');
+  doc.setTextColor(...NAVY);doc.setFontSize(12);doc.setFont('helvetica','bold');doc.text('Cashflow Forecast Report',mg+5,y+7);
+  doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(...MI);
+  doc.text(`Period: ${fmtDate(fromVal)} — ${fmtDate(toVal)}  ·  ${events.length} payment${events.length!==1?'s':''}`,mg+5,y+12);
+  y+=22;
+
+  // KPI boxes
+  const kpis=[['Total Forecast',fmt(totalAmt),false],['Balance Payments',fmt(balAmt),false],['Deposits',fmt(depAmt),false],['Overdue',fmt(overdueAmt),overdueAmt>0]];
+  const kW=(cW-9)/4;
+  kpis.forEach(([lbl,val,warn],i)=>{
+    const x=mg+i*(kW+3);
+    doc.setFillColor(warn?255:235,warn?245:240,warn?235:250);doc.roundedRect(x,y,kW,15,1.5,1.5,'F');
+    doc.setTextColor(...MI);doc.setFontSize(6);doc.setFont('helvetica','bold');doc.text(lbl.toUpperCase(),x+kW/2,y+5,{align:'center'});
+    doc.setTextColor(warn?146:NAVY[0],warn?64:NAVY[1],warn?14:NAVY[2]);doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.text(val,x+kW/2,y+11.5,{align:'center'});
+  });
+  y+=20;
+
+  // Bar chart
+  if(groups.length){
+    doc.setFillColor(...NAVY);doc.rect(mg,y,cW,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text('CASHFLOW CHART',mg+3,y+4.8);y+=10;
+    doc.setFillColor(...TEAL);doc.rect(mg,y,4,4,'F');doc.setTextColor(...MI);doc.setFontSize(7);doc.setFont('helvetica','normal');doc.text('Deposits',mg+6,y+3.2);
+    doc.setFillColor(...BLUE);doc.rect(mg+36,y,4,4,'F');doc.text('Balance Payments',mg+42,y+3.2);y+=8;
+    const maxG=groups.reduce((m,g)=>Math.max(m,g.depTotal+g.balTotal),0)||1;
+    const bW=cW-55;const bH=5;
+    groups.forEach((g,i)=>{
+      chk(9);
+      if(i%2===0){doc.setFillColor(248,250,253);doc.rect(mg,y-1,cW,bH+2,'F');}
+      doc.setTextColor(...MI);doc.setFontSize(6.5);doc.setFont('helvetica','normal');doc.text(g.label,mg,y+bH-1,{maxWidth:48});
+      const dW=Math.round(g.depTotal/maxG*bW);const bW2=Math.round(g.balTotal/maxG*bW);
+      if(dW>0){doc.setFillColor(...TEAL);doc.rect(mg+50,y,dW,bH,'F');}
+      if(bW2>0){doc.setFillColor(...BLUE);doc.rect(mg+50+dW,y,bW2,bH,'F');}
+      doc.setTextColor(...BK);doc.setFontSize(6.5);doc.setFont('helvetica','bold');doc.text(fmt(g.depTotal+g.balTotal),210-mg,y+bH-1,{align:'right'});
+      y+=bH+3;
+    });
+    y+=4;
+  }
+
+  // Payment schedule table
+  chk(20);
+  doc.setFillColor(...NAVY);doc.rect(mg,y,cW,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text('PAYMENT SCHEDULE',mg+3,y+4.8);y+=10;
+  if(!events.length){
+    doc.setTextColor(...MI);doc.setFontSize(8);doc.setFont('helvetica','italic');doc.text('No outstanding payments in this period.',mg+3,y+5);y+=10;
+  } else {
+    const cols=[['Due Date',28],['Customer',40],['Nature of Job',46],['Invoice',18],['Type',18],['Amount (R)',24]];
+    doc.setFillColor(235,240,250);doc.rect(mg,y,cW,6,'F');
+    doc.setTextColor(...NAVY);doc.setFontSize(6.5);doc.setFont('helvetica','bold');
+    let hx=mg;cols.forEach(([lbl,w])=>{doc.text(lbl,hx+1.5,y+4.2);hx+=w;});y+=7;
+    events.forEach((e,i)=>{
+      chk(7);const rH=6;
+      if(e.overdue){doc.setFillColor(255,251,235);}else if(i%2===0){doc.setFillColor(248,250,253);}else{doc.setFillColor(255,255,255);}
+      doc.rect(mg,y,cW,rH,'F');doc.setDrawColor(...MG);doc.setLineWidth(0.1);doc.line(mg,y+rH,mg+cW,y+rH);
+      const vals=[fmtDate(e.date),e.customer,e.nature,e.invoice,e.type,fmt(e.amount)];
+      let rx=mg;
+      vals.forEach((v,vi)=>{
+        const w=cols[vi][1];const maxC=Math.floor(w/1.7);
+        const txt=String(v).length>maxC?String(v).slice(0,maxC-1)+'…':String(v);
+        doc.setFont('helvetica',vi===5?'bold':'normal');doc.setFontSize(7);
+        doc.setTextColor(vi===5?NAVY[0]:BK[0],vi===5?NAVY[1]:BK[1],vi===5?NAVY[2]:BK[2]);
+        doc.text(txt,rx+1.5,y+4.2);rx+=w;
+      });
+      if(e.overdue){doc.setTextColor(146,64,14);doc.setFontSize(5.5);doc.setFont('helvetica','bold');doc.text('⚠ OVERDUE',mg+1.5,y+rH-0.8);}
+      y+=rH;
+    });
+    y+=3;chk(8);
+    doc.setFillColor(...NAVY);doc.rect(mg,y,cW,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
+    doc.text(`Total: ${fmt(totalAmt)}     Payments: ${events.length}${overdueAmt>0?`     Overdue: ${fmt(overdueAmt)}`:''}`,mg+3,y+4.8);
+    y+=10;
+  }
+
+  // Page footers
+  const pc=doc.internal.getNumberOfPages();
+  for(let p=1;p<=pc;p++){doc.setPage(p);doc.setDrawColor(...MG);doc.line(mg,290,210-mg,290);doc.setTextColor(...MI);doc.setFontSize(7);doc.setFont('helvetica','normal');doc.text('Blake Hydraulics — Confidential',mg,294);doc.text(`Page ${p} of ${pc}`,210-mg,294,{align:'right'});}
+  return doc;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // CONVERSION
 // ═══════════════════════════════════════════════════════════════
@@ -852,6 +1027,156 @@ function renderPipeline(){
   document.getElementById('pipe-total').textContent=fmt(f.reduce((s,d)=>s+d.value,0));
   document.getElementById('pipe-weighted').textContent=fmt(Math.round(f.reduce((s,d)=>s+d.value*d.prob/100,0)));
   document.getElementById('pipe-count').textContent=f.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CASHFLOW FORECAST
+// ═══════════════════════════════════════════════════════════════
+function setCFRange(days){
+  const f=document.getElementById('cf-from');const t=document.getElementById('cf-to');
+  if(f&&t){f.value=today();t.value=addDays(today(),days-1);}
+  document.querySelectorAll('.cf-range-btn').forEach(b=>b.classList.toggle('active',b.dataset.days==days));
+  renderCashflow();
+}
+
+function renderCashflow(){
+  const fromVal=document.getElementById('cf-from')?.value||today();
+  const toVal=document.getElementById('cf-to')?.value||addDays(today(),29);
+  const t=document.getElementById('cf-to');if(t&&!t.value)t.value=toVal;
+  const f=document.getElementById('cf-from');if(f&&!f.value)f.value=fromVal;
+
+  // Collect unpaid payment events from WIP jobs
+  const events=[];
+  wipJobs.forEach(j=>{
+    if(!j.deposit_paid&&j.deposit_amount>0&&j.expected_deposit_date&&j.expected_deposit_date>=fromVal&&j.expected_deposit_date<=toVal){
+      events.push({date:j.expected_deposit_date,customer:j.customer||'—',nature:j.nature_of_job||'—',invoice:j.invoice||'—',quote:j.quote_number||'—',amount:j.deposit_amount,type:'Deposit',status:j.status,overdue:j.expected_deposit_date<today()});
+    }
+    if(!j.paid_full&&j.expected_payment_date&&j.expected_payment_date>=fromVal&&j.expected_payment_date<=toVal){
+      const bal=Math.max(0,(j.total_amount||0)-(j.deposit_amount||0));
+      if(bal>0)events.push({date:j.expected_payment_date,customer:j.customer||'—',nature:j.nature_of_job||'—',invoice:j.invoice||'—',quote:j.quote_number||'—',amount:bal,type:'Balance',status:j.status,overdue:j.expected_payment_date<today()});
+    }
+  });
+  events.sort((a,b)=>a.date.localeCompare(b.date));
+
+  const totalAmt=events.reduce((s,e)=>s+e.amount,0);
+  const depAmt=events.filter(e=>e.type==='Deposit').reduce((s,e)=>s+e.amount,0);
+  const balAmt=events.filter(e=>e.type==='Balance').reduce((s,e)=>s+e.amount,0);
+  const overdueAmt=events.filter(e=>e.overdue).reduce((s,e)=>s+e.amount,0);
+
+  // Group by period
+  const daysDiff=Math.ceil((new Date(toVal)-new Date(fromVal))/86400000)+1;
+  let groups=[];
+  if(daysDiff<=21){
+    // Daily
+    let d=fromVal;
+    while(d<=toVal){
+      const evs=events.filter(e=>e.date===d);
+      if(evs.length)groups.push({label:fmtDate(d),dateStr:d,events:evs,depTotal:evs.filter(e=>e.type==='Deposit').reduce((s,e)=>s+e.amount,0),balTotal:evs.filter(e=>e.type==='Balance').reduce((s,e)=>s+e.amount,0)});
+      d=addDays(d,1);
+    }
+  } else if(daysDiff<=90){
+    // Weekly
+    let ws=fromVal;
+    while(ws<=toVal){
+      const we=addDays(ws,6)<=toVal?addDays(ws,6):toVal;
+      const evs=events.filter(e=>e.date>=ws&&e.date<=we);
+      if(evs.length)groups.push({label:`${fmtDate(ws)} – ${fmtDate(we)}`,events:evs,depTotal:evs.filter(e=>e.type==='Deposit').reduce((s,e)=>s+e.amount,0),balTotal:evs.filter(e=>e.type==='Balance').reduce((s,e)=>s+e.amount,0)});
+      ws=addDays(ws,7);
+    }
+  } else {
+    // Monthly
+    let ms=new Date(fromVal);ms=new Date(ms.getFullYear(),ms.getMonth(),1);
+    while(ms.toISOString().slice(0,10)<=toVal){
+      const meDate=new Date(ms.getFullYear(),ms.getMonth()+1,0);
+      const msStr=ms.toISOString().slice(0,10);
+      const meStr=(meDate.toISOString().slice(0,10)>toVal?toVal:meDate.toISOString().slice(0,10));
+      const evs=events.filter(e=>e.date>=msStr&&e.date<=meStr);
+      if(evs.length)groups.push({label:fmtMonth(msStr),events:evs,depTotal:evs.filter(e=>e.type==='Deposit').reduce((s,e)=>s+e.amount,0),balTotal:evs.filter(e=>e.type==='Balance').reduce((s,e)=>s+e.amount,0)});
+      ms=new Date(ms.getFullYear(),ms.getMonth()+1,1);
+    }
+  }
+  const maxBar=groups.reduce((m,g)=>Math.max(m,g.depTotal+g.balTotal),0)||1;
+
+  let h=`
+  <div class="cf-range-btns">
+    <span style="font-size:12px;font-weight:500;color:var(--text-secondary);align-self:center;margin-right:4px">Quick range:</span>
+    <button class="cf-range-btn" data-days="7" onclick="setCFRange(7)">7 days</button>
+    <button class="cf-range-btn active" data-days="30" onclick="setCFRange(30)">30 days</button>
+    <button class="cf-range-btn" data-days="60" onclick="setCFRange(60)">60 days</button>
+    <button class="cf-range-btn" data-days="90" onclick="setCFRange(90)">90 days</button>
+    <button class="cf-range-btn" data-days="180" onclick="setCFRange(180)">6 months</button>
+  </div>
+  <div class="cf-date-row">
+    <label>From</label>
+    <input type="date" id="cf-from" value="${fromVal}" onchange="document.querySelectorAll('.cf-range-btn').forEach(b=>b.classList.remove('active'));renderCashflow()" style="height:34px">
+    <label>To</label>
+    <input type="date" id="cf-to" value="${toVal}" onchange="document.querySelectorAll('.cf-range-btn').forEach(b=>b.classList.remove('active'));renderCashflow()" style="height:34px">
+    <button class="btn primary" onclick="downloadCashflowPDF()" style="margin-left:auto"><i class="ti ti-file-download"></i> Download PDF</button>
+  </div>
+  <div class="kpi-grid" style="margin-bottom:20px">
+    <div class="kpi"><div class="kpi-label">Total forecast</div><div class="kpi-val" style="font-size:18px">${fmt(totalAmt)}</div><div class="kpi-sub">${events.length} payment${events.length!==1?'s':''}</div></div>
+    <div class="kpi"><div class="kpi-label">Balance payments</div><div class="kpi-val" style="font-size:18px">${fmt(balAmt)}</div><div class="kpi-sub">${events.filter(e=>e.type==='Balance').length} items</div></div>
+    <div class="kpi"><div class="kpi-label">Deposits expected</div><div class="kpi-val" style="font-size:18px">${fmt(depAmt)}</div><div class="kpi-sub">${events.filter(e=>e.type==='Deposit').length} items</div></div>
+    <div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-val ${overdueAmt>0?'low':''}" style="font-size:18px">${fmt(overdueAmt)}</div><div class="kpi-sub">${events.filter(e=>e.overdue).length} past due</div></div>
+  </div>`;
+
+  if(!events.length){
+    h+=`<div class="empty">No outstanding payments in this date range</div>`;
+  } else {
+    // Chart
+    h+=`<div class="section-hd" style="margin-bottom:12px">Cash inflow by ${daysDiff<=21?'day':daysDiff<=90?'week':'month'}</div>
+    <div class="cf-legend">
+      <span style="display:flex;align-items:center;gap:5px"><span class="cf-legend-dot" style="background:#0d9488"></span>Deposits</span>
+      <span style="display:flex;align-items:center;gap:5px"><span class="cf-legend-dot" style="background:var(--accent)"></span>Balance payments</span>
+    </div>
+    <div class="cf-chart-wrap">`;
+    groups.forEach(g=>{
+      const total=g.depTotal+g.balTotal;
+      const depW=Math.round(g.depTotal/maxBar*100);
+      const balW=Math.round(g.balTotal/maxBar*100);
+      h+=`<div class="cf-bar-row">
+        <div class="cf-bar-label" title="${g.label}">${g.label}</div>
+        <div class="cf-bar-track">
+          <div class="cf-bar-deposit" style="width:${depW}%"></div>
+          <div class="cf-bar-balance" style="width:${balW}%"></div>
+        </div>
+        <div class="cf-bar-value">${fmt(total)}</div>
+      </div>`;
+    });
+    h+=`</div>`;
+
+    // Detail table
+    h+=`<div class="section-hd" style="margin:20px 0 10px">Payment schedule</div>
+    <div class="tbl-wrap"><table>
+      <colgroup><col style="width:92px"><col style="width:120px"><col style="width:185px"><col style="width:75px"><col style="width:80px"><col style="width:90px"><col style="width:100px"><col style="width:90px"></colgroup>
+      <thead><tr><th>Due date</th><th>Customer</th><th>Nature of job</th><th>Invoice</th><th>Quote</th><th>Type</th><th>Amount (R)</th><th>Job status</th></tr></thead>
+      <tbody>`;
+    let running=0;
+    events.forEach(e=>{
+      running+=e.amount;
+      h+=`<tr class="${e.overdue?'cf-overdue':''}">
+        <td>${fmtDate(e.date)}${e.overdue?` <span class="badge b-amber" style="font-size:10px;padding:1px 5px">Overdue</span>`:''}</td>
+        <td title="${e.customer}">${e.customer}</td>
+        <td title="${e.nature}">${e.nature}</td>
+        <td>${e.invoice}</td>
+        <td>${e.quote}</td>
+        <td><span class="badge ${e.type==='Deposit'?'b-teal':'b-blue'}">${e.type}</span></td>
+        <td style="text-align:right;font-weight:500">${fmt(e.amount)}</td>
+        <td><span class="badge ${'Jobs On The Go'===e.status?'b-blue':'Awaiting Approval'===e.status?'b-amber':'b-green'}">${e.status}</span></td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>
+    <div class="pipe-footer" style="margin-top:10px">
+      <span>Payments shown: <strong>${events.length}</strong></span>
+      <span>Total: <strong>${fmt(totalAmt)}</strong></span>
+      ${overdueAmt>0?`<span style="color:var(--warn-text)">Overdue: <strong>${fmt(overdueAmt)}</strong></span>`:''}
+    </div>`;
+  }
+
+  document.getElementById('cashflow-content').innerHTML=h;
+  // Mark active quick-range button after re-render
+  const cfFrom=document.getElementById('cf-from');const cfTo=document.getElementById('cf-to');
+  if(cfFrom&&cfTo){document.querySelectorAll('.cf-range-btn').forEach(b=>{const d=parseInt(b.dataset.days);b.classList.toggle('active',cfFrom.value===today()&&cfTo.value===addDays(today(),d-1));});}
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -953,6 +1278,214 @@ function renderWIPStaffRows(){
     <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;white-space:nowrap"><input type="checkbox" ${r.completed?'checked':''} onchange="wipStaffRows[${i}].completed=this.checked"> Done</label>
     <button class="icon-btn del" onclick="removeWIPStaffRow(${i})" type="button"><i class="ti ti-x"></i></button>
   </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEAM PLANNER
+// ═══════════════════════════════════════════════════════════════
+function renderPlanner(){
+  if(!plannerWeekStart)plannerWeekStart=getMondayOf(today());
+  const ws=plannerWeekStart;
+  const days=DAY_NAMES.map((_,i)=>addDays(ws,i));
+  const todayStr=today();
+  const weekEntries=plannerEntries.filter(e=>e.week_start===ws);
+  const weekLabel=`${fmtDate(days[0])} – ${fmtDate(days[4])}`;
+
+  let h=`<div class="week-nav">
+    <button class="btn" onclick="plannerPrevWeek()"><i class="ti ti-chevron-left"></i> Prev</button>
+    <button class="btn" onclick="plannerThisWeek()"><i class="ti ti-calendar-event"></i> This week</button>
+    <button class="btn" onclick="plannerNextWeek()">Next <i class="ti ti-chevron-right"></i></button>
+    <strong style="font-size:14px;margin-left:4px">${weekLabel}</strong>
+    <button class="btn success" style="margin-left:auto" onclick="downloadPlannerPDF()"><i class="ti ti-file-type-pdf"></i> Download PDF</button>
+  </div>`;
+
+  // Team member management bar
+  h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px 14px;background:var(--bg-secondary);border-radius:var(--radius-md);border:0.5px solid var(--border-light)">
+    <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary)">Team members</span>
+    ${teamMembers.map(m=>`<span style="display:inline-flex;align-items:center;gap:5px;background:var(--bg-primary);border:0.5px solid var(--border-mid);border-radius:99px;padding:3px 10px;font-size:12px">
+      ${m.name}
+      <button onclick="removeTeamMember('${m.id}')" style="border:none;background:none;cursor:pointer;color:var(--text-tertiary);display:inline-flex;align-items:center;padding:0;line-height:1" title="Remove"><i class="ti ti-x" style="font-size:11px"></i></button>
+    </span>`).join('')}
+    <div style="display:flex;gap:6px;align-items:center;margin-left:4px">
+      <input type="text" id="new-member-input" placeholder="Add team member…" style="height:30px;font-size:12px;width:160px" onkeydown="if(event.key==='Enter')addTeamMember()">
+      <button class="btn primary" onclick="addTeamMember()" style="padding:4px 10px;font-size:12px;height:30px"><i class="ti ti-plus"></i> Add</button>
+    </div>
+  </div>`;
+
+  if(!teamMembers.length){
+    h+=`<div class="empty"><i class="ti ti-users" style="font-size:32px;margin-bottom:8px;display:block;opacity:.3"></i>No team members yet.<br><span style="font-size:12px">Type a name above and click Add to get started.</span></div>`;
+    document.getElementById('planner-content').innerHTML=h;
+    return;
+  }
+
+  h+=`<div class="planner-wrap"><table class="planner-table"><thead><tr>
+    <th>Team Member</th>
+    ${days.map((d,i)=>`<th${d===todayStr?' style="background:var(--info-bg);color:var(--info-text)"':''}>${DAY_SHORT[i]}<br><span style="font-weight:400;font-size:10px">${fmtDate(d)}</span></th>`).join('')}
+  </tr></thead><tbody>`;
+
+  teamMembers.forEach(m=>{
+    h+=`<tr><td class="planner-staff-cell">${m.name}</td>`;
+    days.forEach((d,di)=>{
+      const cellEntries=weekEntries.filter(e=>e.staff_name===m.name&&e.day_index===di);
+      const isTodayCol=d===todayStr;
+      h+=`<td class="planner-day-cell"${isTodayCol?' style="background:var(--info-bg)"':''}>`;
+      cellEntries.forEach(e=>{
+        const wj=wipJobs.find(j=>j.id===e.job_id);
+        const title=wj?`${wj.customer||'Job'} — ${wj.nature_of_job||''}`:e.custom_task||'Task';
+        const sub=e.notes||'';
+        h+=`<div class="planner-entry" onclick="openModal('plannerEdit','${e.id}')">
+          <div class="planner-entry-title" title="${title.replace(/"/g,'&quot;')}">${title.length>38?title.slice(0,36)+'…':title}</div>
+          ${sub?`<div class="planner-entry-sub">${sub.length>40?sub.slice(0,38)+'…':sub}</div>`:''}
+          <button class="planner-entry-del" onclick="event.stopPropagation();deletePlannerEntry('${e.id}')" title="Remove"><i class="ti ti-x"></i></button>
+        </div>`;
+      });
+      h+=`<button class="planner-add-btn" onclick="openModal('plannerAdd','${m.name}|${di}|${ws}')"><i class="ti ti-plus"></i> Add</button>`;
+      h+=`</td>`;
+    });
+    h+=`</tr>`;
+  });
+
+  h+=`</tbody></table></div>`;
+  document.getElementById('planner-content').innerHTML=h;
+}
+
+async function addTeamMember(){
+  const inp=document.getElementById('new-member-input');
+  const name=(inp?.value||'').trim();
+  if(!name)return;
+  if(teamMembers.find(m=>m.name.toLowerCase()===name.toLowerCase())){toast('Already on the list','err');return;}
+  try{
+    const row=await dbInsert('team_members',{name});
+    teamMembers.push(row);
+    teamMembers.sort((a,b)=>a.name.localeCompare(b.name));
+    toast(`${name} added`);renderPlanner();
+  }catch(e){toast('Failed to add: '+e.message,'err');}
+}
+
+async function removeTeamMember(id){
+  const m=teamMembers.find(x=>x.id===id);
+  if(!confirm(`Remove ${m?.name} from the team planner? Their scheduled entries will also be deleted.`))return;
+  try{
+    // Remove all planner entries for this member
+    const toDelete=plannerEntries.filter(e=>e.staff_name===m.name);
+    for(const e of toDelete){await dbDelete('team_planner',e.id);}
+    plannerEntries=plannerEntries.filter(e=>e.staff_name!==m.name);
+    await dbDelete('team_members',id);
+    teamMembers=teamMembers.filter(x=>x.id!==id);
+    toast(`${m.name} removed`);renderPlanner();
+  }catch(e){toast('Failed to remove: '+e.message,'err');}
+}
+
+async function deletePlannerEntry(id){
+  if(!confirm('Remove this planner entry?'))return;
+  try{
+    await dbDelete('team_planner',id);
+    plannerEntries=plannerEntries.filter(e=>e.id!==id);
+    toast('Entry removed');renderPlanner();
+  }catch(e){toast('Delete failed: '+e.message,'err');}
+}
+
+function buildPlannerPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  const PW=841.89,PH=595.28;
+  const NAVY=[15,30,68],LG=[245,247,250],MG=[220,225,235],WHITE=[255,255,255];
+  const TEAL=[13,148,136];
+
+  const ws=plannerWeekStart||getMondayOf(today());
+  const days=DAY_NAMES.map((_,i)=>addDays(ws,i));
+  const weekEntries=plannerEntries.filter(e=>e.week_start===ws);
+  const staffList=teamMembers.map(m=>m.name);
+
+  // Header bar
+  doc.setFillColor(...NAVY);doc.rect(0,0,PW,48,'F');
+  doc.setFontSize(18);doc.setFont('helvetica','bold');doc.setTextColor(...WHITE);
+  doc.text('Blake Hydraulics',30,30);
+  doc.setFontSize(10);doc.setFont('helvetica','normal');
+  doc.text('Sales & Operations Tracker',30,42);
+  doc.setFontSize(13);doc.setFont('helvetica','bold');
+  doc.text('TEAM PLANNER',PW-30,30,{align:'right'});
+  doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text(`${fmtDate(days[0])} – ${fmtDate(days[4])}`,PW-30,42,{align:'right'});
+
+  // Grid dimensions
+  const marginL=30,marginR=30,gridTop=68;
+  const gridW=PW-marginL-marginR;
+  const COL0=120; // staff name column width
+  const dayW=(gridW-COL0)/5;
+  const rowH=Math.min(80,Math.floor((PH-gridTop-50)/Math.max(staffList.length+1,2)));
+
+  // Header row
+  doc.setFillColor(...LG);
+  doc.rect(marginL,gridTop,gridW,20,'F');
+  doc.setDrawColor(...MG);
+  doc.rect(marginL,gridTop,gridW,20,'S');
+  doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...NAVY);
+  doc.text('TEAM MEMBER',marginL+6,gridTop+13);
+  days.forEach((d,i)=>{
+    const x=marginL+COL0+i*dayW;
+    doc.text(`${DAY_SHORT[i].toUpperCase()} ${fmtDate(d)}`,x+dayW/2,gridTop+13,{align:'center'});
+  });
+
+  // Staff rows
+  staffList.forEach((name,ri)=>{
+    const y=gridTop+20+ri*rowH;
+    // Row background
+    doc.setFillColor(...(ri%2===0?WHITE:LG));
+    doc.rect(marginL,y,gridW,rowH,'F');
+    doc.setDrawColor(...MG);
+    doc.rect(marginL,y,gridW,rowH,'S');
+
+    // Staff name cell
+    doc.setFillColor(...LG);
+    doc.rect(marginL,y,COL0,rowH,'F');
+    doc.setDrawColor(...MG);
+    doc.rect(marginL,y,COL0,rowH,'S');
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...NAVY);
+    const nameLines=doc.splitTextToSize(name,COL0-10);
+    doc.text(nameLines,marginL+5,y+12);
+
+    // Day cells
+    days.forEach((d,di)=>{
+      const x=marginL+COL0+di*dayW;
+      const cellEntries=weekEntries.filter(e=>e.staff_name===name&&e.day_index===di);
+      doc.setDrawColor(...MG);
+      doc.rect(x,y,dayW,rowH,'S');
+
+      let ey=y+9;
+      cellEntries.forEach((e,ei)=>{
+        if(ey>y+rowH-6)return;
+        const wj=wipJobs.find(j=>j.id===e.job_id);
+        const title=wj?`${wj.customer||''}: ${wj.nature_of_job||''}`.trim():e.custom_task||'Task';
+        // Entry chip background
+        doc.setFillColor(...[219,234,254]);
+        doc.roundedRect(x+3,ey-6,dayW-6,ei===cellEntries.length-1?Math.min(16,rowH-ey+y-2):14,2,2,'F');
+        doc.setFontSize(6.5);doc.setFont('helvetica','bold');doc.setTextColor(...NAVY);
+        const tLines=doc.splitTextToSize(title,dayW-12);
+        doc.text(tLines[0],x+5,ey);
+        if(e.notes&&ey+9<y+rowH-2){
+          doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(107,114,128);
+          const nLines=doc.splitTextToSize(e.notes,dayW-12);
+          doc.text(nLines[0],x+5,ey+7);
+          ey+=7;
+        }
+        ey+=10;
+      });
+    });
+  });
+
+  // Footer
+  doc.setFillColor(...NAVY);doc.rect(0,PH-22,PW,22,'F');
+  doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(...WHITE);
+  doc.text(`Generated ${fmtDate(today())} | Blake Hydraulics Sales & Operations Tracker`,PW/2,PH-8,{align:'center'});
+
+  return doc;
+}
+
+function downloadPlannerPDF(){
+  const ws=plannerWeekStart||getMondayOf(today());
+  const doc=buildPlannerPDF();
+  doc.save(`Team_Planner_${ws}.pdf`);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1072,6 +1605,55 @@ function openModal(mode,extra){
     title.textContent='Remove job';
     saveBtn.className='btn danger';saveBtn.textContent='Yes, remove';
     body.innerHTML=`<div class="confirm-box"><i class="ti ti-alert-triangle"></i> Remove job <strong>${j.nature_of_job}</strong> for <strong>${j.customer}</strong>? This cannot be undone.</div>`;
+  } else if(mode==='plannerAdd'){
+    // extra = "staffName|dayIndex|weekStart"
+    const parts=(extra||'').split('|');
+    const staffName=parts[0]||'';const dayIdx=parseInt(parts[1])||0;const ws=parts[2]||getMondayOf(today());
+    title.textContent=`Add task — ${staffName} — ${DAY_NAMES[dayIdx]}`;
+    const wipOpts=wipJobs.filter(j=>j.status!=='Job Complete').map(j=>`<option value="${j.id}">${j.customer||'?'}: ${(j.nature_of_job||'').slice(0,40)}</option>`).join('');
+    body.innerHTML=`
+      <div class="form-row"><label>Type</label>
+        <select id="f-planner-type" onchange="document.getElementById('f-planner-wip-row').style.display=this.value==='wip'?'block':'none';document.getElementById('f-planner-task-row').style.display=this.value==='custom'?'block':'none'">
+          <option value="wip">Assign WIP job</option>
+          <option value="custom">Custom task</option>
+        </select>
+      </div>
+      <div class="form-row" id="f-planner-wip-row">
+        <label>WIP job</label>
+        <select id="f-planner-job"><option value="">Select job…</option>${wipOpts}</select>
+      </div>
+      <div class="form-row" id="f-planner-task-row" style="display:none">
+        <label>Task description</label>
+        <input type="text" id="f-planner-custom" placeholder="e.g. Site inspection at client X">
+      </div>
+      <div class="form-row"><label>Notes <span style="font-weight:400;color:var(--text-secondary)">(optional)</span></label>
+        <input type="text" id="f-planner-notes" placeholder="e.g. 08:00–12:00, bring tools"></div>
+      <input type="hidden" id="f-planner-staff" value="${staffName}">
+      <input type="hidden" id="f-planner-day" value="${dayIdx}">
+      <input type="hidden" id="f-planner-ws" value="${ws}">`;
+  } else if(mode==='plannerEdit'){
+    const e=plannerEntries.find(x=>x.id===extra);
+    const wj=wipJobs.find(j=>j.id===e?.job_id);
+    title.textContent=`Edit task — ${e?.staff_name} — ${DAY_NAMES[e?.day_index||0]}`;
+    const wipOpts=wipJobs.filter(j=>j.status!=='Job Complete').map(j=>`<option value="${j.id}"${j.id===e?.job_id?' selected':''}>${j.customer||'?'}: ${(j.nature_of_job||'').slice(0,40)}</option>`).join('');
+    const isCustom=!e?.job_id;
+    body.innerHTML=`
+      <div class="form-row"><label>Type</label>
+        <select id="f-planner-type" onchange="document.getElementById('f-planner-wip-row').style.display=this.value==='wip'?'block':'none';document.getElementById('f-planner-task-row').style.display=this.value==='custom'?'block':'none'">
+          <option value="wip"${!isCustom?' selected':''}>Assign WIP job</option>
+          <option value="custom"${isCustom?' selected':''}>Custom task</option>
+        </select>
+      </div>
+      <div class="form-row" id="f-planner-wip-row"${isCustom?' style="display:none"':''}>
+        <label>WIP job</label>
+        <select id="f-planner-job"><option value="">Select job…</option>${wipOpts}</select>
+      </div>
+      <div class="form-row" id="f-planner-task-row"${!isCustom?' style="display:none"':''}>
+        <label>Task description</label>
+        <input type="text" id="f-planner-custom" value="${e?.custom_task||''}" placeholder="e.g. Site inspection at client X">
+      </div>
+      <div class="form-row"><label>Notes <span style="font-weight:400;color:var(--text-secondary)">(optional)</span></label>
+        <input type="text" id="f-planner-notes" value="${e?.notes||''}" placeholder="e.g. 08:00–12:00, bring tools"></div>`;
   } else if(mode==='viewActivity'){
     const a=activities.find(x=>x.id===extra);
     title.textContent='Activity details';saveBtn.style.display='none';
@@ -1208,6 +1790,25 @@ async function saveModal(){
       await dbDelete('wip_jobs',targetId);
       wipJobs=wipJobs.filter(j=>j.id!==targetId);
       toast('Job removed');closeModal();renderWIP();
+    } else if(modalMode==='plannerAdd'){
+      const staffName=document.getElementById('f-planner-staff')?.value||'';
+      const dayIdx=parseInt(document.getElementById('f-planner-day')?.value)||0;
+      const ws=document.getElementById('f-planner-ws')?.value||getMondayOf(today());
+      const type=document.getElementById('f-planner-type')?.value||'wip';
+      const jobId=type==='wip'?(document.getElementById('f-planner-job')?.value||null):null;
+      const customTask=type==='custom'?(document.getElementById('f-planner-custom')?.value||null):null;
+      const notes=document.getElementById('f-planner-notes')?.value||null;
+      const row=await dbInsert('team_planner',{week_start:ws,staff_name:staffName,day_index:dayIdx,job_id:jobId||null,custom_task:customTask||null,notes:notes||null});
+      plannerEntries.push(row);toast('Entry added');closeModal();renderPlanner();
+    } else if(modalMode==='plannerEdit'){
+      const e=plannerEntries.find(x=>x.id===targetId);
+      const type=document.getElementById('f-planner-type')?.value||'wip';
+      const jobId=type==='wip'?(document.getElementById('f-planner-job')?.value||null):null;
+      const customTask=type==='custom'?(document.getElementById('f-planner-custom')?.value||null):null;
+      const notes=document.getElementById('f-planner-notes')?.value||null;
+      const updates={job_id:jobId||null,custom_task:customTask||null,notes:notes||null};
+      await dbUpdate('team_planner',targetId,updates);Object.assign(e,updates);
+      toast('Entry updated');closeModal();renderPlanner();
     }
   }catch(e){toast('Save failed: '+e.message,'err');console.error(e);}
   saveBtn.disabled=false;
