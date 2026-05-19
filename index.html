@@ -376,7 +376,7 @@ let currentUser=null;
 let users=[], activities=[], deals=[], quotes=[], forecasts={}, wipJobs=[];
 let modalMode='', targetId=null;
 let wipStaffRows=[];
-let plannerEntries=[], plannerWeekStart=null, teamMembers=[];
+let plannerEntries=[], plannerWeekStart=null, teamMembers=[], plannerTaskRows=[];
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -499,7 +499,7 @@ async function doLogin(){
 }
 
 function doLogout(){
-  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];plannerEntries=[];plannerWeekStart=null;teamMembers=[];
+  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];plannerEntries=[];plannerWeekStart=null;teamMembers=[];plannerTaskRows=[];
   document.getElementById('login-screen').style.display='block';
   document.getElementById('main-app').style.display='none';
   document.getElementById('login-user').value='';document.getElementById('login-pass').value='';
@@ -1376,6 +1376,29 @@ async function removeTeamMember(id){
   }catch(e){toast('Failed to remove: '+e.message,'err');}
 }
 
+function addPlannerTaskRow(){plannerTaskRows.push({type:'wip',jobId:'',custom:'',notes:''});renderPlannerTaskRows();}
+function removePlannerTaskRow(i){plannerTaskRows.splice(i,1);renderPlannerTaskRows();}
+function renderPlannerTaskRows(){
+  const c=document.getElementById('planner-task-container');if(!c)return;
+  if(!plannerTaskRows.length){c.innerHTML=`<div style="font-size:12px;color:var(--text-tertiary);font-style:italic;padding:4px 0">No tasks added yet</div>`;return;}
+  const wipOpts=wipJobs.filter(j=>j.status!=='Job Complete').map(j=>`<option value="${j.id}">${j.customer||'?'}: ${(j.nature_of_job||'').slice(0,40)}</option>`).join('');
+  c.innerHTML=plannerTaskRows.map((r,i)=>`
+    <div style="background:var(--bg-secondary);border:0.5px solid var(--border-light);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <select style="height:28px;font-size:12px;flex:1;margin-right:8px" onchange="plannerTaskRows[${i}].type=this.value;renderPlannerTaskRows()">
+          <option value="wip"${r.type==='wip'?' selected':''}>Assign WIP job</option>
+          <option value="custom"${r.type==='custom'?' selected':''}>Custom task</option>
+        </select>
+        <button class="icon-btn del" onclick="removePlannerTaskRow(${i})" type="button" style="flex-shrink:0"><i class="ti ti-x"></i></button>
+      </div>
+      ${r.type==='wip'
+        ?`<select style="width:100%;height:30px;font-size:12px;margin-bottom:6px" onchange="plannerTaskRows[${i}].jobId=this.value"><option value="">Select WIP job…</option>${wipOpts.replace(`value="${r.jobId}"`,`value="${r.jobId}" selected`)}</select>`
+        :`<input type="text" placeholder="Task description…" value="${r.custom}" oninput="plannerTaskRows[${i}].custom=this.value" style="width:100%;margin-bottom:6px">`
+      }
+      <input type="text" placeholder="Notes, e.g. 08:00–12:00, bring tools (optional)" value="${r.notes}" oninput="plannerTaskRows[${i}].notes=this.value" style="width:100%;font-size:12px">
+    </div>`).join('');
+}
+
 async function deletePlannerEntry(id){
   if(!confirm('Remove this planner entry?'))return;
   try{
@@ -1609,28 +1632,16 @@ function openModal(mode,extra){
     // extra = "staffName|dayIndex|weekStart"
     const parts=(extra||'').split('|');
     const staffName=parts[0]||'';const dayIdx=parseInt(parts[1])||0;const ws=parts[2]||getMondayOf(today());
-    title.textContent=`Add task — ${staffName} — ${DAY_NAMES[dayIdx]}`;
-    const wipOpts=wipJobs.filter(j=>j.status!=='Job Complete').map(j=>`<option value="${j.id}">${j.customer||'?'}: ${(j.nature_of_job||'').slice(0,40)}</option>`).join('');
+    title.textContent=`Add tasks — ${staffName} — ${DAY_NAMES[dayIdx]}`;
+    saveBtn.textContent='Save all tasks';
+    plannerTaskRows=[{type:'wip',jobId:'',custom:'',notes:''}];
     body.innerHTML=`
-      <div class="form-row"><label>Type</label>
-        <select id="f-planner-type" onchange="document.getElementById('f-planner-wip-row').style.display=this.value==='wip'?'block':'none';document.getElementById('f-planner-task-row').style.display=this.value==='custom'?'block':'none'">
-          <option value="wip">Assign WIP job</option>
-          <option value="custom">Custom task</option>
-        </select>
-      </div>
-      <div class="form-row" id="f-planner-wip-row">
-        <label>WIP job</label>
-        <select id="f-planner-job"><option value="">Select job…</option>${wipOpts}</select>
-      </div>
-      <div class="form-row" id="f-planner-task-row" style="display:none">
-        <label>Task description</label>
-        <input type="text" id="f-planner-custom" placeholder="e.g. Site inspection at client X">
-      </div>
-      <div class="form-row"><label>Notes <span style="font-weight:400;color:var(--text-secondary)">(optional)</span></label>
-        <input type="text" id="f-planner-notes" placeholder="e.g. 08:00–12:00, bring tools"></div>
       <input type="hidden" id="f-planner-staff" value="${staffName}">
       <input type="hidden" id="f-planner-day" value="${dayIdx}">
-      <input type="hidden" id="f-planner-ws" value="${ws}">`;
+      <input type="hidden" id="f-planner-ws" value="${ws}">
+      <div id="planner-task-container"></div>
+      <button class="btn" type="button" onclick="addPlannerTaskRow()" style="width:100%;justify-content:center;margin-top:4px"><i class="ti ti-plus"></i> Add another task</button>`;
+    renderPlannerTaskRows();
   } else if(mode==='plannerEdit'){
     const e=plannerEntries.find(x=>x.id===extra);
     const wj=wipJobs.find(j=>j.id===e?.job_id);
@@ -1794,12 +1805,13 @@ async function saveModal(){
       const staffName=document.getElementById('f-planner-staff')?.value||'';
       const dayIdx=parseInt(document.getElementById('f-planner-day')?.value)||0;
       const ws=document.getElementById('f-planner-ws')?.value||getMondayOf(today());
-      const type=document.getElementById('f-planner-type')?.value||'wip';
-      const jobId=type==='wip'?(document.getElementById('f-planner-job')?.value||null):null;
-      const customTask=type==='custom'?(document.getElementById('f-planner-custom')?.value||null):null;
-      const notes=document.getElementById('f-planner-notes')?.value||null;
-      const row=await dbInsert('team_planner',{week_start:ws,staff_name:staffName,day_index:dayIdx,job_id:jobId||null,custom_task:customTask||null,notes:notes||null});
-      plannerEntries.push(row);toast('Entry added');closeModal();renderPlanner();
+      const validRows=plannerTaskRows.filter(r=>r.type==='wip'?r.jobId:r.custom.trim());
+      if(!validRows.length){toast('Add at least one task','err');return;}
+      for(const r of validRows){
+        const row=await dbInsert('team_planner',{week_start:ws,staff_name:staffName,day_index:dayIdx,job_id:r.type==='wip'?(r.jobId||null):null,custom_task:r.type==='custom'?(r.custom||null):null,notes:r.notes||null});
+        plannerEntries.push(row);
+      }
+      toast(validRows.length===1?'Task added':`${validRows.length} tasks added`);closeModal();renderPlanner();
     } else if(modalMode==='plannerEdit'){
       const e=plannerEntries.find(x=>x.id===targetId);
       const type=document.getElementById('f-planner-type')?.value||'wip';
