@@ -201,13 +201,6 @@ tr:hover td{background:var(--bg-secondary)}
 .wip-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
 .wip-staff-row{display:grid;grid-template-columns:140px 1fr auto auto;gap:6px;align-items:center;margin-bottom:6px}
 .wip-staff-hd{display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px;padding-top:12px;border-top:0.5px solid var(--border-light)}
-/* ── TEAM PERFORMANCE ── */
-.tp-eff-track{flex:1;background:var(--bg-tertiary);border-radius:4px;height:26px;overflow:hidden;position:relative}
-.tp-eff-marker{position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:var(--border-mid);z-index:2}
-.tp-eff-fill{height:100%;transition:width .4s;position:relative;z-index:1}
-.tp-eff-ahead{background:#0d9488}.tp-eff-on{background:var(--success-text)}.tp-eff-behind{background:var(--warn-text)}.tp-eff-over{background:var(--danger-text)}
-.tp-entry-row{display:grid;grid-template-columns:90px 130px 80px 80px 1fr auto;gap:8px;align-items:center;padding:8px 10px;border-bottom:0.5px solid var(--border-light);font-size:12px}
-.tp-entry-row:last-child{border-bottom:none}
 /* ── TEAM PLANNER ── */
 .planner-wrap{overflow-x:auto}
 .planner-table{width:100%;border-collapse:collapse;min-width:700px}
@@ -282,7 +275,6 @@ tr:hover td{background:var(--bg-secondary)}
       <button class="tab" id="tab-wip-btn" style="display:none" onclick="switchTab('wip')"><i class="ti ti-clipboard-list"></i> WIP Tracker</button>
       <button class="tab" id="tab-cashflow-btn" style="display:none" onclick="switchTab('cashflow')"><i class="ti ti-cash"></i> Cashflow</button>
       <button class="tab" id="tab-planner-btn" style="display:none" onclick="switchTab('planner')"><i class="ti ti-calendar-week"></i> Team Planner</button>
-      <button class="tab" id="tab-perf-btn" style="display:none" onclick="switchTab('perf')"><i class="ti ti-chart-bar"></i> Team Performance</button>
       <button class="tab" id="tab-users-btn" style="display:none" onclick="switchTab('users')"><i class="ti ti-shield-lock"></i> Users</button>
     </div>
 
@@ -349,10 +341,6 @@ tr:hover td{background:var(--bg-secondary)}
       <div id="planner-content"></div>
     </div>
 
-    <div id="tab-perf" class="panel">
-      <div id="perf-content"></div>
-    </div>
-
     <div id="tab-users" class="panel"><div id="users-content"></div></div>
   </div>
 </div>
@@ -399,7 +387,6 @@ let users=[], activities=[], deals=[], quotes=[], forecasts={}, wipJobs=[];
 let modalMode='', targetId=null;
 let wipStaffRows=[];
 let plannerEntries=[], plannerWeekStart=null, teamMembers=[], plannerTaskRows=[];
-let performanceTimesheets=[];
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -462,9 +449,6 @@ async function loadAllData(){
       sb.from('team_members').select('*').order('name'),
     ]);
     users=u||[];activities=a||[];deals=d||[];quotes=q||[];wipJobs=wj||[];plannerEntries=pe||[];teamMembers=tm||[];
-    // Load performance timesheets separately so any table/RLS issue doesn't break login
-    try{const{data:pts}=await sb.from('performance_timesheets').select('*').order('date',{ascending:false});performanceTimesheets=pts||[];}
-    catch(pe2){console.warn('performance_timesheets not available:',pe2);performanceTimesheets=[];}
     forecasts={};
     (f||[]).forEach(row=>{
       if(!forecasts[row.rep_name])forecasts[row.rep_name]={};
@@ -517,7 +501,6 @@ async function doLogin(){
     document.getElementById('tab-wip-btn').style.display=isAdmin()?'':'none';
     document.getElementById('tab-cashflow-btn').style.display=isAdmin()?'':'none';
     document.getElementById('tab-planner-btn').style.display=isAdmin()?'':'none';
-    document.getElementById('tab-perf-btn').style.display=isAdmin()?'':'none';
     document.getElementById('tab-users-btn').style.display=isSuperAdmin()?'':'none';
     await loadAllData();
     switchTab('dashboard');
@@ -526,7 +509,7 @@ async function doLogin(){
 }
 
 function doLogout(){
-  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];plannerEntries=[];plannerWeekStart=null;teamMembers=[];plannerTaskRows=[];performanceTimesheets=[];
+  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];plannerEntries=[];plannerWeekStart=null;teamMembers=[];plannerTaskRows=[];
   document.getElementById('login-screen').style.display='block';
   document.getElementById('main-app').style.display='none';
   document.getElementById('login-user').value='';document.getElementById('login-pass').value='';
@@ -537,7 +520,7 @@ function doLogout(){
 // TABS
 // ═══════════════════════════════════════════════════════════════
 function switchTab(t){
-  const names=['dashboard','deals','forecast','eod','conversion','activity','pipeline','wip','cashflow','planner','perf','users'];
+  const names=['dashboard','deals','forecast','eod','conversion','activity','pipeline','wip','cashflow','planner','users'];
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',names[i]===t));
   document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
   const p=document.getElementById('tab-'+t);if(p)p.classList.add('active');
@@ -552,7 +535,6 @@ function switchTab(t){
   if(t==='wip')renderWIP();
   if(t==='cashflow')renderCashflow();
   if(t==='planner')renderPlanner();
-  if(t==='perf')renderPerformance();
   if(t==='users')renderUsers();
 }
 
@@ -1211,146 +1193,6 @@ function renderCashflow(){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TEAM PERFORMANCE
-// ═══════════════════════════════════════════════════════════════
-function setTPRange(days){
-  const f=document.getElementById('tp-from');const t=document.getElementById('tp-to');
-  if(f)f.value=addDays(today(),-(days-1));
-  if(t)t.value=today();
-  document.querySelectorAll('.tp-range-btn').forEach(b=>b.classList.toggle('active',b.dataset.days==days));
-  renderPerformance();
-}
-
-function renderPerformance(){
-  const fromVal=document.getElementById('tp-from')?.value||addDays(today(),-29);
-  const toVal=document.getElementById('tp-to')?.value||today();
-  const memberFilter=document.getElementById('tp-member')?.value||'';
-
-  // Filter entries by date range and optional member
-  let entries=performanceTimesheets.filter(e=>e.date>=fromVal&&e.date<=toVal);
-  if(memberFilter)entries=entries.filter(e=>e.team_member_name===memberFilter);
-
-  // Build per-job aggregates
-  const jobMap={};
-  entries.forEach(e=>{
-    if(!jobMap[e.job_id]){
-      const j=wipJobs.find(x=>x.id===e.job_id)||{};
-      jobMap[e.job_id]={job_id:e.job_id,job_number:j.job_number||'—',customer:j.customer||'—',nature:j.nature_of_job||'—',job_status:j.status||'—',hours_allocated:parseFloat(j.labour_hours_allocated)||0,entries:[],hours_used:0};
-    }
-    jobMap[e.job_id].entries.push(e);
-    jobMap[e.job_id].hours_used+=parseFloat(e.hours_used)||0;
-  });
-  const jobs=Object.values(jobMap).sort((a,b)=>a.job_number.localeCompare(b.job_number));
-
-  // Efficiency per job: hours_used / hours_allocated * 100
-  jobs.forEach(j=>{
-    j.eff=j.hours_allocated>0?(j.hours_used/j.hours_allocated*100):null;
-    if(j.eff===null){j.status_label='No allocation';j.status_class='b-gray';}
-    else if(j.eff<95){j.status_label='Ahead of target';j.status_class='b-teal';}
-    else if(j.eff<=105){j.status_label='On target';j.status_class='b-green';}
-    else if(j.eff<=130){j.status_label='Behind target';j.status_class='b-amber';}
-    else{j.status_label='Significantly behind';j.status_class='b-coral';}
-    j.eff_col=j.eff===null?'var(--text-tertiary)':j.eff<95?'#0d9488':j.eff<=105?'var(--success-text)':j.eff<=130?'var(--warn-text)':'var(--danger-text)';
-  });
-
-  // KPIs
-  const totalAlloc=jobs.reduce((s,j)=>s+j.hours_allocated,0);
-  const totalUsed=jobs.reduce((s,j)=>s+j.hours_used,0);
-  const overallEff=totalAlloc>0?(totalUsed/totalAlloc*100):null;
-  const aheadN=jobs.filter(j=>j.eff!==null&&j.eff<95).length;
-  const onN=jobs.filter(j=>j.eff!==null&&j.eff>=95&&j.eff<=105).length;
-  const behindN=jobs.filter(j=>j.eff!==null&&j.eff>105).length;
-  const teamUsers=users.filter(u=>u.role==='team'||u.role==='admin'||u.role==='super_admin');
-
-  let h=`
-  <div class="cf-range-btns">
-    <span style="font-size:12px;font-weight:500;color:var(--text-secondary);align-self:center;margin-right:4px">Quick range:</span>
-    <button class="tp-range-btn cf-range-btn" data-days="7" onclick="setTPRange(7)">7 days</button>
-    <button class="tp-range-btn cf-range-btn active" data-days="30" onclick="setTPRange(30)">30 days</button>
-    <button class="tp-range-btn cf-range-btn" data-days="60" onclick="setTPRange(60)">60 days</button>
-    <button class="tp-range-btn cf-range-btn" data-days="90" onclick="setTPRange(90)">90 days</button>
-    <button class="tp-range-btn cf-range-btn" data-days="180" onclick="setTPRange(180)">6 months</button>
-  </div>
-  <div class="cf-date-row">
-    <label>From</label>
-    <input type="date" id="tp-from" value="${fromVal}" onchange="document.querySelectorAll('.tp-range-btn').forEach(b=>b.classList.remove('active'));renderPerformance()" style="height:34px">
-    <label>To</label>
-    <input type="date" id="tp-to" value="${toVal}" onchange="document.querySelectorAll('.tp-range-btn').forEach(b=>b.classList.remove('active'));renderPerformance()" style="height:34px">
-    <select id="tp-member" onchange="renderPerformance()" style="height:34px;font-size:13px">
-      <option value="">All team members</option>
-      ${users.map(u=>`<option value="${u.name}" ${memberFilter===u.name?'selected':''}>${u.name} (${roleLabel(u.role)})</option>`).join('')}
-    </select>
-    <button class="btn primary" onclick="openModal('perfAdd')" style="margin-left:auto"><i class="ti ti-plus"></i> Log hours</button>
-  </div>
-  <div class="kpi-grid" style="margin-bottom:20px">
-    <div class="kpi"><div class="kpi-label">Jobs tracked</div><div class="kpi-val">${jobs.length}</div><div class="kpi-sub">${entries.length} timesheet entr${entries.length!==1?'ies':'y'}</div></div>
-    <div class="kpi"><div class="kpi-label">Hours allocated</div><div class="kpi-val">${totalAlloc.toFixed(1)}</div><div class="kpi-sub">across ${jobs.length} job${jobs.length!==1?'s':''}</div></div>
-    <div class="kpi"><div class="kpi-label">Hours used</div><div class="kpi-val">${totalUsed.toFixed(1)}</div><div class="kpi-sub">${totalAlloc>0?(totalUsed<=totalAlloc?`${(totalAlloc-totalUsed).toFixed(1)}h under budget`:`${(totalUsed-totalAlloc).toFixed(1)}h over budget`):''}</div></div>
-    <div class="kpi"><div class="kpi-label">Overall efficiency</div><div class="kpi-val ${overallEff===null?'':overallEff<=100?'good':overallEff<=115?'mid':'low'}">${overallEff!==null?overallEff.toFixed(1)+'%':'—'}</div><div class="kpi-sub">${aheadN} ahead · ${onN} on target · ${behindN} behind</div></div>
-  </div>`;
-
-  if(!jobs.length){
-    h+=`<div class="empty">No timesheet entries in this date range${memberFilter?' for '+memberFilter:''} — click <strong>Log hours</strong> to start tracking</div>`;
-  } else {
-    // Efficiency chart — 0–200% scale, 100% marker at 50% width
-    h+=`<div class="section-hd" style="margin-bottom:8px">Efficiency by job — hours used vs allocated (100% = on target)</div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:11px;color:var(--text-secondary)">
-      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#0d9488;display:inline-block"></span>Ahead &lt; 95%</span>
-      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--success-text);display:inline-block"></span>On target 95–105%</span>
-      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--warn-text);display:inline-block"></span>Behind &gt; 105%</span>
-    </div>
-    <div style="background:var(--bg-secondary);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:20px;border:0.5px solid var(--border-light)">`;
-    jobs.filter(j=>j.eff!==null).forEach(j=>{
-      const barW=Math.min(j.eff,200)/200*100;
-      const fillClass=j.eff<95?'tp-eff-ahead':j.eff<=105?'tp-eff-on':j.eff<=130?'tp-eff-behind':'tp-eff-over';
-      h+=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px">
-        <div style="width:110px;flex-shrink:0;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${j.job_number} – ${j.customer}">${j.job_number!=='—'?j.job_number:j.customer}</div>
-        <div class="tp-eff-track"><div class="tp-eff-marker"></div><div class="tp-eff-fill ${fillClass}" style="width:${barW}%"></div></div>
-        <div style="width:52px;text-align:right;font-weight:600;font-size:12px;color:${j.eff_col}">${j.eff.toFixed(1)}%</div>
-      </div>`;
-    });
-    h+=`<div style="font-size:10px;color:var(--text-tertiary);text-align:center;margin-top:6px">◄ 0% ···· 50% ···· 100% (target) ···· 150% ···· 200% ►</div>`;
-    h+=`</div>`;
-
-    // Performance table with cumulative column
-    h+=`<div class="section-hd" style="margin-bottom:10px">Performance detail</div>
-    <div class="tbl-wrap"><table>
-      <colgroup><col style="width:85px"><col style="width:118px"><col style="width:165px"><col style="width:120px"><col style="width:80px"><col style="width:72px"><col style="width:78px"><col style="width:85px"><col style="width:100px"><col style="width:38px"></colgroup>
-      <thead><tr><th>Job #</th><th>Customer</th><th>Nature of job</th><th>Team members</th><th>Alloc h</th><th>Used h</th><th>Efficiency</th><th>Cumulative</th><th>Status</th><th></th></tr></thead>
-      <tbody>`;
-    let cumSum=0,cumCount=0;
-    jobs.forEach(j=>{
-      if(j.eff!==null){cumSum+=j.eff;cumCount++;}
-      const cum=cumCount>0?(cumSum/cumCount):null;
-      const members=[...new Set(j.entries.map(e=>e.team_member_name))].join(', ');
-      h+=`<tr>
-        <td style="font-weight:500">${j.job_number}</td>
-        <td title="${j.customer}">${j.customer}</td>
-        <td title="${j.nature}" style="max-width:165px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${j.nature}</td>
-        <td style="font-size:11px;color:var(--text-secondary)">${members||'—'}</td>
-        <td style="text-align:center">${j.hours_allocated||'—'}</td>
-        <td style="text-align:center;font-weight:500">${j.hours_used.toFixed(1)}</td>
-        <td style="text-align:center;font-weight:600;color:${j.eff_col}">${j.eff!==null?j.eff.toFixed(1)+'%':'—'}</td>
-        <td style="text-align:center;color:var(--text-secondary)">${cum!==null?cum.toFixed(1)+'%':'—'}</td>
-        <td><span class="badge ${j.status_class}">${j.status_label}</span></td>
-        <td><button class="icon-btn" onclick="openModal('perfEntries','${j.job_id}')" title="View entries"><i class="ti ti-list-details"></i></button></td>
-      </tr>`;
-    });
-    h+=`</tbody></table></div>
-    <div class="pipe-footer" style="margin-top:10px">
-      <span>Jobs tracked: <strong>${jobs.length}</strong></span>
-      <span>Total hours used: <strong>${totalUsed.toFixed(1)}</strong></span>
-      ${overallEff!==null?`<span ${overallEff>105?'style="color:var(--warn-text)"':overallEff<95?'style="color:#0d9488"':''}>Overall efficiency: <strong>${overallEff.toFixed(1)}%</strong></span>`:''}
-    </div>`;
-  }
-
-  document.getElementById('perf-content').innerHTML=h;
-  // Restore active quick-range btn
-  const tf=document.getElementById('tp-from');const tt=document.getElementById('tp-to');
-  if(tf&&tt){document.querySelectorAll('.tp-range-btn').forEach(b=>{const d=parseInt(b.dataset.days);b.classList.toggle('active',tf.value===addDays(today(),-(d-1))&&tt.value===today());});}
-}
-
-// ═══════════════════════════════════════════════════════════════
 // WIP TRACKER
 // ═══════════════════════════════════════════════════════════════
 function renderWIP(){
@@ -1806,7 +1648,6 @@ function openModal(mode,extra){
         <div class="form-row"><label>Expected payment date</label><input type="date" id="f-paydate" value="${j.expected_payment_date||''}"></div>
         <div class="form-row"><label>Paid in full?</label><select id="f-paidfull"><option value="false"${!j.paid_full?' selected':''}>No</option><option value="true"${j.paid_full?' selected':''}>Yes</option></select></div>
       </div>
-      <div class="form-row"><label>Labour hours allocated</label><input type="number" id="f-labour-hours" min="0" step="0.5" placeholder="e.g. 8" value="${j.labour_hours_allocated||''}"></div>
       <div class="form-row"><label>Staff responsibilities & time-frame</label><textarea id="f-staffnotes">${j.staff_notes||''}</textarea></div>
       <div class="wip-staff-hd">
         <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary)">Staff assignments</span>
@@ -1923,56 +1764,6 @@ function openModal(mode,extra){
       ${tasks.length?`<div class="detail-sep"></div><span class="detail-label" style="padding-top:4px">Staff</span><span>${tasks.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="badge ${t.completed?'b-green':'b-gray'}" style="flex-shrink:0">${t.completed?'Done':'Pending'}</span><span style="font-size:12px"><strong>${t.staff_name}</strong>${t.task?' — '+t.task:''}</span></div>`).join('')}</span>`:''}
     </div>`;
   }
-  } else if(mode==='perfAdd'||mode==='perfEdit'){
-    const e=mode==='perfEdit'?performanceTimesheets.find(x=>x.id===extra):{};
-    title.textContent=mode==='perfAdd'?'Log hours':'Edit timesheet entry';
-    const wipOpts=wipJobs.map(j=>`<option value="${j.id}" ${e.job_id===j.id?'selected':''}>${j.job_number||'(no #)'} — ${j.customer||'Unknown'}</option>`).join('');
-    body.innerHTML=`
-      <div class="form-row"><label>Team member</label>
-        <select id="f-perf-member">
-          <option value="">Select…</option>
-          ${users.map(u=>`<option value="${u.name}" ${e.team_member_name===u.name?'selected':''}>${u.name} (${roleLabel(u.role)})</option>`).join('')}
-        </select>
-      </div>
-      <div class="form-row"><label>WIP job</label>
-        <select id="f-perf-job"><option value="">Select job…</option>${wipOpts}</select>
-      </div>
-      <div class="form-2">
-        <div class="form-row"><label>Date</label><input type="date" id="f-perf-date" value="${e.date||today()}"></div>
-        <div class="form-row"><label>Hours used</label><input type="number" id="f-perf-hours" min="0" step="0.25" placeholder="e.g. 3.5" value="${e.hours_used||''}"></div>
-      </div>
-      <div class="form-row"><label>Notes <span style="font-weight:400;color:var(--text-secondary)">(optional)</span></label><textarea id="f-perf-notes" placeholder="e.g. welding + assembly">${e.notes||''}</textarea></div>`;
-  } else if(mode==='perfEntries'){
-    // View all entries for a job
-    const j=wipJobs.find(x=>x.id===extra)||{};
-    title.textContent=`Timesheet entries — ${j.job_number||'Job'} ${j.customer?'('+j.customer+')':''}`;
-    saveBtn.style.display='none';
-    const jobEntries=performanceTimesheets.filter(e=>e.job_id===extra).sort((a,b)=>b.date.localeCompare(a.date));
-    if(!jobEntries.length){
-      body.innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--text-secondary);font-size:13px">No entries logged for this job yet.</div>`;
-    } else {
-      const totalH=jobEntries.reduce((s,e)=>s+parseFloat(e.hours_used||0),0);
-      body.innerHTML=`<div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Hours allocated: <strong>${j.labour_hours_allocated||'—'}</strong> · Total hours logged: <strong>${totalH.toFixed(1)}</strong></div>
-      <div style="border:0.5px solid var(--border-light);border-radius:var(--radius-md);overflow:hidden">
-        ${jobEntries.map(e=>`<div class="tp-entry-row">
-          <span style="color:var(--text-secondary)">${fmtDate(e.date)}</span>
-          <span style="font-weight:500">${e.team_member_name}</span>
-          <span style="text-align:center">${parseFloat(e.hours_used).toFixed(1)}h</span>
-          <span style="font-size:11px;color:var(--text-secondary)">${e.notes||''}</span>
-          <span></span>
-          <div style="display:flex;gap:4px">
-            <button class="icon-btn" onclick="closeModal();openModal('perfEdit','${e.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
-            <button class="icon-btn del" onclick="openModal('perfDelete','${e.id}')" title="Delete"><i class="ti ti-trash"></i></button>
-          </div>
-        </div>`).join('')}
-      </div>`;
-    }
-  } else if(mode==='perfDelete'){
-    title.textContent='Delete entry';
-    saveBtn.className='btn danger';saveBtn.textContent='Yes, delete';
-    const e=performanceTimesheets.find(x=>x.id===extra)||{};
-    body.innerHTML=`<div class="confirm-box"><i class="ti ti-alert-triangle"></i> Delete this timesheet entry for <strong>${e.team_member_name}</strong> on ${fmtDate(e.date)} (${parseFloat(e.hours_used||0).toFixed(1)}h)?</div>`;
-  }
   document.getElementById('modal-overlay').classList.add('open');
 }
 
@@ -2021,7 +1812,7 @@ async function saveModal(){
     } else if(modalMode==='wipAdd'){
       const depPaid=document.getElementById('f-deppaid').value==='true';
       const paidFull=document.getElementById('f-paidfull').value==='true';
-      const row=await dbInsert('wip_jobs',{job_number:g('f-jobnum')||null,status:g('f-wip-status'),customer:g('f-cust'),nature_of_job:g('f-nature'),delivery_date:g('f-delivery')||null,quote_number:g('f-quote')||null,sales_order:g('f-so')||null,invoice:g('f-invoice')||null,total_amount:parseFloat(g('f-total'))||0,deposit_amount:parseFloat(g('f-dep'))||0,expected_deposit_date:g('f-depdate')||null,deposit_paid:depPaid,expected_payment_date:g('f-paydate')||null,paid_full:paidFull,staff_notes:g('f-staffnotes')||null,labour_hours_allocated:parseFloat(g('f-labour-hours'))||null});
+      const row=await dbInsert('wip_jobs',{job_number:g('f-jobnum')||null,status:g('f-wip-status'),customer:g('f-cust'),nature_of_job:g('f-nature'),delivery_date:g('f-delivery')||null,quote_number:g('f-quote')||null,sales_order:g('f-so')||null,invoice:g('f-invoice')||null,total_amount:parseFloat(g('f-total'))||0,deposit_amount:parseFloat(g('f-dep'))||0,expected_deposit_date:g('f-depdate')||null,deposit_paid:depPaid,expected_payment_date:g('f-paydate')||null,paid_full:paidFull,staff_notes:g('f-staffnotes')||null});
       const tasks=wipStaffRows.filter(r=>r.name.trim());
       if(tasks.length){await sb.from('wip_staff_tasks').insert(tasks.map(r=>({job_id:row.id,staff_name:r.name,task:r.task,completed:r.completed})));}
       row.wip_staff_tasks=tasks.map(r=>({staff_name:r.name,task:r.task,completed:r.completed}));
@@ -2029,7 +1820,7 @@ async function saveModal(){
     } else if(modalMode==='wipEdit'){
       const depPaid=document.getElementById('f-deppaid').value==='true';
       const paidFull=document.getElementById('f-paidfull').value==='true';
-      const updates={job_number:g('f-jobnum')||null,status:g('f-wip-status'),customer:g('f-cust'),nature_of_job:g('f-nature'),delivery_date:g('f-delivery')||null,quote_number:g('f-quote')||null,sales_order:g('f-so')||null,invoice:g('f-invoice')||null,total_amount:parseFloat(g('f-total'))||0,deposit_amount:parseFloat(g('f-dep'))||0,expected_deposit_date:g('f-depdate')||null,deposit_paid:depPaid,expected_payment_date:g('f-paydate')||null,paid_full:paidFull,staff_notes:g('f-staffnotes')||null,labour_hours_allocated:parseFloat(g('f-labour-hours'))||null};
+      const updates={job_number:g('f-jobnum')||null,status:g('f-wip-status'),customer:g('f-cust'),nature_of_job:g('f-nature'),delivery_date:g('f-delivery')||null,quote_number:g('f-quote')||null,sales_order:g('f-so')||null,invoice:g('f-invoice')||null,total_amount:parseFloat(g('f-total'))||0,deposit_amount:parseFloat(g('f-dep'))||0,expected_deposit_date:g('f-depdate')||null,deposit_paid:depPaid,expected_payment_date:g('f-paydate')||null,paid_full:paidFull,staff_notes:g('f-staffnotes')||null};
       await dbUpdate('wip_jobs',targetId,updates);
       await sb.from('wip_staff_tasks').delete().eq('job_id',targetId);
       const tasks=wipStaffRows.filter(r=>r.name.trim());
@@ -2042,35 +1833,6 @@ async function saveModal(){
       await dbDelete('wip_jobs',targetId);
       wipJobs=wipJobs.filter(j=>j.id!==targetId);
       toast('Job removed');closeModal();renderWIP();
-    } else if(modalMode==='perfAdd'){
-      const member=document.getElementById('f-perf-member')?.value||'';
-      const jobId=document.getElementById('f-perf-job')?.value||'';
-      const date=document.getElementById('f-perf-date')?.value||today();
-      const hoursUsed=parseFloat(document.getElementById('f-perf-hours')?.value)||0;
-      const notes=document.getElementById('f-perf-notes')?.value||null;
-      if(!member){toast('Select a team member','err');return;}
-      if(!jobId){toast('Select a WIP job','err');return;}
-      if(!hoursUsed||hoursUsed<=0){toast('Enter hours used','err');return;}
-      const row=await dbInsert('performance_timesheets',{team_member_name:member,job_id:jobId,date,hours_used:hoursUsed,notes});
-      performanceTimesheets.unshift(row);
-      toast('Hours logged');closeModal();renderPerformance();
-    } else if(modalMode==='perfEdit'){
-      const member=document.getElementById('f-perf-member')?.value||'';
-      const jobId=document.getElementById('f-perf-job')?.value||'';
-      const date=document.getElementById('f-perf-date')?.value||today();
-      const hoursUsed=parseFloat(document.getElementById('f-perf-hours')?.value)||0;
-      const notes=document.getElementById('f-perf-notes')?.value||null;
-      if(!member){toast('Select a team member','err');return;}
-      if(!jobId){toast('Select a WIP job','err');return;}
-      if(!hoursUsed||hoursUsed<=0){toast('Enter hours used','err');return;}
-      const updates={team_member_name:member,job_id:jobId,date,hours_used:hoursUsed,notes};
-      await dbUpdate('performance_timesheets',targetId,updates);
-      const e=performanceTimesheets.find(x=>x.id===targetId);Object.assign(e,updates);
-      toast('Entry updated');closeModal();renderPerformance();
-    } else if(modalMode==='perfDelete'){
-      await dbDelete('performance_timesheets',targetId);
-      performanceTimesheets=performanceTimesheets.filter(e=>e.id!==targetId);
-      toast('Entry deleted');closeModal();renderPerformance();
     } else if(modalMode==='plannerAdd'){
       const staffName=document.getElementById('f-planner-staff')?.value||'';
       const dayIdx=parseInt(document.getElementById('f-planner-day')?.value)||0;
