@@ -1003,6 +1003,199 @@ function buildCashflowPDF(fromVal,toVal){
 }
 
 // ═══════════════════════════════════════════════════════════════
+// TEAM PERFORMANCE PDF
+// ═══════════════════════════════════════════════════════════════
+function downloadPerformancePDF(){
+  const fromVal=document.getElementById('tp-from')?.value||addDays(today(),-29);
+  const toVal=document.getElementById('tp-to')?.value||today();
+  const memberFilter=document.getElementById('tp-member')?.value||'';
+  buildPerformancePDF(fromVal,toVal,memberFilter).save(`Team_Performance_${fromVal}_to_${toVal}.pdf`);
+}
+
+function buildPerformancePDF(fromVal,toVal,memberFilter=''){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const mg=18,cW=210-mg*2;let y=mg;
+  const NAVY=[15,40,80],LG=[245,247,250],MG=[180,185,195],BK=[20,20,20],MI=[80,90,110];
+  const TEAL=[13,148,136],GREEN=[22,101,52],AMBER=[146,64,14],RED=[153,27,27];
+
+  // Filter + aggregate — mirrors renderPerformance logic
+  let entries=performanceTimesheets.filter(e=>e.date>=fromVal&&e.date<=toVal);
+  if(memberFilter)entries=entries.filter(e=>e.team_member_name===memberFilter);
+
+  const jobMap={};
+  entries.forEach(e=>{
+    if(!jobMap[e.job_id]){
+      const j=wipJobs.find(x=>x.id===e.job_id)||{};
+      jobMap[e.job_id]={job_id:e.job_id,job_number:j.job_number||'—',customer:j.customer||'—',nature:j.nature_of_job||'—',hours_allocated:parseFloat(j.labour_hours_allocated)||0,entries:[],hours_used:0};
+    }
+    jobMap[e.job_id].entries.push(e);
+    jobMap[e.job_id].hours_used+=parseFloat(e.hours_used)||0;
+  });
+  const jobs=Object.values(jobMap).sort((a,b)=>a.job_number.localeCompare(b.job_number));
+  jobs.forEach(j=>{
+    j.eff=j.hours_allocated>0?(j.hours_used/j.hours_allocated*100):null;
+    if(j.eff===null){j.slabel='No Allocation';}
+    else if(j.eff<95){j.slabel='Ahead of Target';}
+    else if(j.eff<=105){j.slabel='On Target';}
+    else if(j.eff<=130){j.slabel='Behind Target';}
+    else{j.slabel='Significantly Behind';}
+  });
+
+  const totalAlloc=jobs.reduce((s,j)=>s+j.hours_allocated,0);
+  const totalUsed=jobs.reduce((s,j)=>s+j.hours_used,0);
+  const overallEff=totalAlloc>0?(totalUsed/totalAlloc*100):null;
+  const aheadN=jobs.filter(j=>j.eff!==null&&j.eff<95).length;
+  const onN=jobs.filter(j=>j.eff!==null&&j.eff>=95&&j.eff<=105).length;
+  const behindN=jobs.filter(j=>j.eff!==null&&j.eff>105).length;
+  const sortedEntries=[...entries].sort((a,b)=>b.date.localeCompare(a.date));
+
+  function dH(){
+    doc.setFillColor(...NAVY);doc.rect(0,0,210,14,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('BLAKE HYDRAULICS',mg,9.5);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text('Team Performance Report',mg+54,9.5);
+    doc.text(`Generated: ${fmtDate(today())}`,210-mg,9.5,{align:'right'});
+  }
+  function chk(n=10){if(y+n>285){doc.addPage();y=mg;dH();}}
+  dH();y=22;
+
+  // Title banner
+  doc.setFillColor(...LG);doc.roundedRect(mg,y,cW,16,2,2,'F');
+  doc.setTextColor(...NAVY);doc.setFontSize(12);doc.setFont('helvetica','bold');doc.text('Team Performance Report',mg+5,y+7);
+  doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(...MI);
+  doc.text(`Period: ${fmtDate(fromVal)} — ${fmtDate(toVal)}${memberFilter?'   ·   '+memberFilter:'   ·   All members'}   ·   ${sortedEntries.length} entr${sortedEntries.length!==1?'ies':'y'}`,mg+5,y+12);
+  y+=22;
+
+  // KPI boxes
+  const effStr=overallEff!==null?overallEff.toFixed(1)+'%':'—';
+  const effWarn=overallEff!==null&&overallEff>105;
+  const kpis=[['Jobs Tracked',String(jobs.length),false],['Hours Allocated',totalAlloc.toFixed(1)+'h',false],['Hours Used',totalUsed.toFixed(1)+'h',false],['Overall Efficiency',effStr,effWarn]];
+  const kW=(cW-9)/4;
+  kpis.forEach(([lbl,val,warn],i)=>{
+    const x=mg+i*(kW+3);
+    doc.setFillColor(warn?255:235,warn?245:240,warn?235:250);doc.roundedRect(x,y,kW,15,1.5,1.5,'F');
+    doc.setTextColor(...MI);doc.setFontSize(6);doc.setFont('helvetica','bold');doc.text(lbl.toUpperCase(),x+kW/2,y+5,{align:'center'});
+    doc.setTextColor(warn?AMBER[0]:NAVY[0],warn?AMBER[1]:NAVY[1],warn?AMBER[2]:NAVY[2]);doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.text(val,x+kW/2,y+11.5,{align:'center'});
+  });
+  y+=20;
+
+  // Status summary strip
+  chk(10);
+  doc.setFillColor(235,240,250);doc.roundedRect(mg,y,cW,9,1,1,'F');
+  doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...MI);
+  const summaryTxt=`Ahead of Target: ${aheadN}   |   On Target: ${onN}   |   Behind Target: ${behindN}`;
+  doc.text(summaryTxt,mg+cW/2,y+5.5,{align:'center'});
+  y+=14;
+
+  // Efficiency chart
+  if(jobs.filter(j=>j.eff!==null).length){
+    chk(15);
+    doc.setFillColor(...NAVY);doc.rect(mg,y,cW,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text('EFFICIENCY BY JOB',mg+3,y+4.8);y+=10;
+    // Legend
+    doc.setFillColor(...TEAL);doc.rect(mg,y,3,3,'F');doc.setTextColor(...MI);doc.setFontSize(6.5);doc.setFont('helvetica','normal');doc.text('Ahead <95%',mg+5,y+2.5);
+    doc.setFillColor(...GREEN);doc.rect(mg+36,y,3,3,'F');doc.text('On Target 95-105%',mg+41,y+2.5);
+    doc.setFillColor(...AMBER);doc.rect(mg+82,y,3,3,'F');doc.text('Behind >105%',mg+87,y+2.5);
+    y+=7;
+    const barMaxW=cW-52;const barH=5;const markerX=mg+36+barMaxW/2;
+    // Target marker line label
+    doc.setTextColor(...MI);doc.setFontSize(5.5);doc.setFont('helvetica','normal');doc.text('100%',markerX-3,y);
+    y+=3;
+    jobs.filter(j=>j.eff!==null).forEach((j,i)=>{
+      chk(8);
+      if(i%2===0){doc.setFillColor(248,250,253);doc.rect(mg,y-1,cW,barH+2,'F');}
+      const label=(j.job_number!=='—'?j.job_number:j.customer).slice(0,16);
+      doc.setTextColor(...MI);doc.setFontSize(6.5);doc.setFont('helvetica','normal');doc.text(label,mg,y+barH-1);
+      // Bar: scale 0-200% maps to 0-barMaxW, 100% at barMaxW/2
+      const barW=Math.min(j.eff,200)/200*barMaxW;
+      const col=j.eff<95?TEAL:j.eff<=105?GREEN:j.eff<=130?AMBER:RED;
+      doc.setFillColor(...col);doc.rect(mg+36,y,barW,barH,'F');
+      // 100% marker
+      doc.setDrawColor(...MG);doc.setLineWidth(0.3);doc.line(markerX,y-1,markerX,y+barH+1);
+      doc.setTextColor(...col);doc.setFontSize(6.5);doc.setFont('helvetica','bold');doc.text(j.eff.toFixed(1)+'%',mg+36+barMaxW+2,y+barH-1);
+      y+=barH+3;
+    });
+    y+=4;
+  }
+
+  // Job summary table
+  chk(20);
+  doc.setFillColor(...NAVY);doc.rect(mg,y,cW,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text('JOB SUMMARY',mg+3,y+4.8);y+=10;
+  const jCols=[['Job #',18],['Customer',38],['Nature of Job',50],['Alloc h',18],['Used h',18],['Efficiency',22],['Cumulative',22],['Status',26]];
+  doc.setFillColor(235,240,250);doc.rect(mg,y,cW,6,'F');
+  doc.setTextColor(...NAVY);doc.setFontSize(6.5);doc.setFont('helvetica','bold');
+  let hx=mg;jCols.forEach(([lbl,w])=>{doc.text(lbl,hx+1.5,y+4.2);hx+=w;});y+=7;
+  let cumSum=0,cumCount=0;
+  jobs.forEach((j,i)=>{
+    chk(7);
+    if(j.eff!==null){cumSum+=j.eff;cumCount++;}
+    const cum=cumCount>0?(cumSum/cumCount):null;
+    const members=[...new Set(j.entries.map(e=>e.team_member_name))].join(', ');
+    if(i%2===0){doc.setFillColor(248,250,253);}else{doc.setFillColor(255,255,255);}
+    doc.rect(mg,y,cW,6,'F');doc.setDrawColor(...MG);doc.setLineWidth(0.1);doc.line(mg,y+6,mg+cW,y+6);
+    const effCol=j.eff===null?MI:j.eff<95?TEAL:j.eff<=105?GREEN:j.eff<=130?AMBER:RED;
+    const rowVals=[j.job_number,j.customer,j.nature,j.hours_allocated?j.hours_allocated+'h':'—',j.hours_used.toFixed(1)+'h',j.eff!==null?j.eff.toFixed(1)+'%':'—',cum!==null?cum.toFixed(1)+'%':'—',j.slabel];
+    let rx=mg;
+    rowVals.forEach((v,vi)=>{
+      const w=jCols[vi][1];const maxC=Math.floor(w/1.6);
+      const txt=String(v).length>maxC?String(v).slice(0,maxC-1)+'…':String(v);
+      const isEff=vi===5;const isStatus=vi===7;
+      doc.setFont('helvetica',isEff||vi===0?'bold':'normal');doc.setFontSize(6.5);
+      doc.setTextColor(...(isEff?effCol:isStatus?(j.eff===null?MI:j.eff<95?TEAL:j.eff<=105?GREEN:j.eff<=130?AMBER:RED):BK));
+      doc.text(txt,rx+1.5,y+4.2);rx+=w;
+    });
+    y+=6;
+  });
+  y+=4;
+
+  // Timesheet entries table
+  chk(20);
+  doc.setFillColor(...NAVY);doc.rect(mg,y,cW,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text('TIMESHEET ENTRIES',mg+3,y+4.8);y+=10;
+  if(!sortedEntries.length){
+    doc.setTextColor(...MI);doc.setFontSize(8);doc.setFont('helvetica','italic');doc.text('No timesheet entries in this period.',mg+3,y+5);y+=10;
+  } else {
+    const eCols=[['Date',22],['Team Member',40],['Job #',18],['Hours Used',22],['Efficiency',22],['Notes',50]];
+    doc.setFillColor(235,240,250);doc.rect(mg,y,cW,6,'F');
+    doc.setTextColor(...NAVY);doc.setFontSize(6.5);doc.setFont('helvetica','bold');
+    let ehx=mg;eCols.forEach(([lbl,w])=>{doc.text(lbl,ehx+1.5,y+4.2);ehx+=w;});y+=7;
+    sortedEntries.forEach((e,i)=>{
+      chk(7);
+      const j=wipJobs.find(x=>x.id===e.job_id)||{};
+      const alloc=parseFloat(j.labour_hours_allocated)||0;
+      const used=parseFloat(e.hours_used)||0;
+      const eff=alloc>0?(used/alloc*100):null;
+      const effCol=eff===null?MI:eff<95?TEAL:eff<=105?GREEN:eff<=130?AMBER:RED;
+      if(i%2===0){doc.setFillColor(248,250,253);}else{doc.setFillColor(255,255,255);}
+      doc.rect(mg,y,cW,6,'F');doc.setDrawColor(...MG);doc.setLineWidth(0.1);doc.line(mg,y+6,mg+cW,y+6);
+      const eVals=[fmtDate(e.date),e.team_member_name,j.job_number||'—',used.toFixed(1)+'h',eff!==null?eff.toFixed(1)+'%':'—',e.notes||''];
+      let erx=mg;
+      eVals.forEach((v,vi)=>{
+        const w=eCols[vi][1];const maxC=Math.floor(w/1.6);
+        const txt=String(v).length>maxC?String(v).slice(0,maxC-1)+'…':String(v);
+        const isEff=vi===4;
+        doc.setFont('helvetica',vi===0||vi===3?'bold':'normal');doc.setFontSize(6.5);
+        doc.setTextColor(...(isEff?effCol:BK));
+        doc.text(txt,erx+1.5,y+4.2);erx+=w;
+      });
+      y+=6;
+    });
+    y+=3;chk(8);
+    doc.setFillColor(...NAVY);doc.rect(mg,y,cW,7,'F');doc.setTextColor(255,255,255);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
+    doc.text(`Entries: ${sortedEntries.length}   |   Total hours used: ${totalUsed.toFixed(1)}h${overallEff!==null?'   |   Overall efficiency: '+overallEff.toFixed(1)+'%':''}`,mg+3,y+4.8);
+    y+=10;
+  }
+
+  // Page footers
+  const pc=doc.internal.getNumberOfPages();
+  for(let p=1;p<=pc;p++){
+    doc.setPage(p);doc.setDrawColor(...MG);doc.line(mg,290,210-mg,290);
+    doc.setTextColor(...MI);doc.setFontSize(7);doc.setFont('helvetica','normal');
+    doc.text('B.O.S — Confidential',mg,294);
+    doc.text(`Page ${p} of ${pc}`,210-mg,294,{align:'right'});
+  }
+  return doc;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // CONVERSION
 // ═══════════════════════════════════════════════════════════════
 function renderConversion(){
@@ -1277,7 +1470,8 @@ function renderPerformance(){
       <option value="">All team members</option>
       ${users.map(u=>`<option value="${u.name}" ${memberFilter===u.name?'selected':''}>${u.name} (${roleLabel(u.role)})</option>`).join('')}
     </select>
-    <button class="btn primary" onclick="openModal('perfAdd')" style="margin-left:auto"><i class="ti ti-plus"></i> Log hours</button>
+    <button class="btn primary" onclick="openModal('perfAdd')"><i class="ti ti-plus"></i> Log hours</button>
+    <button class="btn success" onclick="downloadPerformancePDF()" style="margin-left:auto"><i class="ti ti-file-download"></i> Download PDF</button>
   </div>
   <div class="kpi-grid" style="margin-bottom:20px">
     <div class="kpi"><div class="kpi-label">Jobs tracked</div><div class="kpi-val">${jobs.length}</div><div class="kpi-sub">${entries.length} timesheet entr${entries.length!==1?'ies':'y'}</div></div>
