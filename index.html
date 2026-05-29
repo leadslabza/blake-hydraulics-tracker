@@ -519,7 +519,7 @@ async function doLogin(){
     document.getElementById('tab-perf-btn').style.display=isAdmin()?'':'none';
     document.getElementById('tab-users-btn').style.display=isSuperAdmin()?'':'none';
     await loadAllData();
-    switchTab(isAdmin() ? 'wip' : 'dashboard');
+    switchTab('dashboard');
   }catch(e){document.getElementById('login-error').textContent='Login failed. Please try again.';document.getElementById('login-error').style.display='block';console.error(e);}
   finally{btn.disabled=false;btn.innerHTML='<i class="ti ti-login"></i> Sign in';}
 }
