@@ -383,8 +383,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ═══════════════════════════════════════════════════════════════
 const TYPES=["Site Visit","Phone Call","Video Call","Email","Trade Show","Demo"];
 const STAGES=["Qualified","Quote","Quote Sent","Approved","PO Received","Closed Won","Closed Lost"];
-const DAY_NAMES=["Monday","Tuesday","Wednesday","Thursday","Friday"];
-const DAY_SHORT=["Mon","Tue","Wed","Thu","Fri"];
+const DAY_NAMES=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const DAY_SHORT=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const SC={"Qualified":"b-blue","Quote":"b-amber","Quote Sent":"b-purple","Approved":"b-teal","PO Received":"b-green","Closed Won":"b-green","Closed Lost":"b-coral"};
 const DP={"Qualified":20,"Quote":35,"Quote Sent":50,"Approved":75,"PO Received":90,"Closed Won":100,"Closed Lost":0};
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -1683,7 +1683,7 @@ function renderPlanner(){
   const days=DAY_NAMES.map((_,i)=>addDays(ws,i));
   const todayStr=today();
   const weekEntries=plannerEntries.filter(e=>e.week_start===ws);
-  const weekLabel=`${fmtDate(days[0])} – ${fmtDate(days[4])}`;
+  const weekLabel=`${fmtDate(days[0])} – ${fmtDate(days[6])}`;
 
   let h=`<div class="week-nav">
     <button class="btn" onclick="plannerPrevWeek()"><i class="ti ti-chevron-left"></i> Prev</button>
@@ -1717,7 +1717,7 @@ function renderPlanner(){
 
   h+=`<div class="planner-wrap"><table class="planner-table"><thead><tr>
     <th>Team Member</th>
-    ${days.map((d,i)=>`<th${d===todayStr?' style="background:var(--info-bg);color:var(--info-text)"':''}>${DAY_SHORT[i]}<br><span style="font-weight:400;font-size:10px">${fmtDate(d)}</span></th>`).join('')}
+    ${days.map((d,i)=>{const isWknd=i>=5;const isToday=d===todayStr;return`<th${isToday?' style="background:var(--info-bg);color:var(--info-text)"':isWknd?' style="background:var(--bg-tertiary);color:var(--text-tertiary)"':''}>${DAY_SHORT[i]}<br><span style="font-weight:400;font-size:10px">${fmtDate(d)}</span></th>`;}).join('')}
   </tr></thead><tbody>`;
 
   teamMembers.forEach(m=>{
@@ -1725,7 +1725,8 @@ function renderPlanner(){
     days.forEach((d,di)=>{
       const cellEntries=weekEntries.filter(e=>e.staff_name===m.name&&e.day_index===di);
       const isTodayCol=d===todayStr;
-      h+=`<td class="planner-day-cell"${isTodayCol?' style="background:var(--info-bg)"':''}>`;
+      const isWknd=di>=5;
+      h+=`<td class="planner-day-cell"${isTodayCol?' style="background:var(--info-bg)"':isWknd?' style="background:var(--bg-tertiary)"':''}>`;
       cellEntries.forEach(e=>{
         const wj=wipJobs.find(j=>j.id===e.job_id);
         const title=wj?`${wj.customer||'Job'} — ${wj.nature_of_job||''}`:e.custom_task||'Task';
@@ -1836,13 +1837,13 @@ function buildPlannerPDF(){
   doc.setFontSize(13);doc.setFont('helvetica','bold');
   doc.text('TEAM PLANNER',PW-30,30,{align:'right'});
   doc.setFontSize(9);doc.setFont('helvetica','normal');
-  doc.text(`${fmtDate(days[0])} – ${fmtDate(days[4])}`,PW-30,42,{align:'right'});
+  doc.text(`${fmtDate(days[0])} – ${fmtDate(days[6])}`,PW-30,42,{align:'right'});
 
   // Grid dimensions
   const marginL=30,marginR=30,gridTop=68;
   const gridW=PW-marginL-marginR;
   const COL0=120; // staff name column width
-  const dayW=(gridW-COL0)/5;
+  const dayW=(gridW-COL0)/7;
   const rowH=Math.min(80,Math.floor((PH-gridTop-50)/Math.max(staffList.length+1,2)));
 
   // Header row
