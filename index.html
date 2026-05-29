@@ -519,7 +519,7 @@ async function doLogin(){
     document.getElementById('tab-perf-btn').style.display=isAdmin()?'':'none';
     document.getElementById('tab-users-btn').style.display=isSuperAdmin()?'':'none';
     await loadAllData();
-    switchTab('dashboard');
+    switchTab(isAdmin() ? 'wip' : 'dashboard');
   }catch(e){document.getElementById('login-error').textContent='Login failed. Please try again.';document.getElementById('login-error').style.display='block';console.error(e);}
   finally{btn.disabled=false;btn.innerHTML='<i class="ti ti-login"></i> Sign in';}
 }
@@ -1929,7 +1929,7 @@ function downloadPlannerPDF(){
 function openModal(mode,extra){
   modalMode=mode;targetId=extra||null;
   const title=document.getElementById('modal-title'),body=document.getElementById('modal-body'),saveBtn=document.getElementById('modal-save-btn');
-  saveBtn.style.cssText='';saveBtn.textContent='Save';
+  saveBtn.style.cssText='';saveBtn.className='btn primary';saveBtn.textContent='Save';
 
   if(mode==='newUser'){
     const roleLabels={'admin':'Add admin','rep':'Add rep','team':'Add team member'};
@@ -1953,7 +1953,7 @@ function openModal(mode,extra){
     saveBtn.className='btn danger';saveBtn.textContent='Yes, remove';
     body.innerHTML=`<div class="confirm-box"><i class="ti ti-alert-triangle"></i> Remove <strong>${u.name}</strong> (${roleLabel(u.role)})? Their historical data stays intact.</div>`;
   } else if(mode==='pipeline'||mode==='editDeal'){
-    const d=mode==='editDeal'?deals.find(x=>x.id===extra):{};
+    const d=mode==='editDeal'?deals.find(x=>String(x.id)===String(extra)):{};
     title.textContent=mode==='pipeline'?'Add deal':'Edit deal';
     body.innerHTML=`<div class="form-2"><div class="form-row"><label>Rep</label><select id="f-rep"><option value="">Select…</option>${repOpts(d.rep||'')}</select></div>
       <div class="form-row"><label>Stage</label><select id="f-stage" onchange="autoProb(this.value)">${STAGES.map(s=>`<option${s===(d.stage||'Qualified')?' selected':''}>${s}</option>`).join('')}</select></div></div>
@@ -1965,7 +1965,7 @@ function openModal(mode,extra){
       <div class="form-2"><div class="form-row"><label>Expected close date</label><input type="date" id="f-close" value="${d.close||''}"></div>
       <div class="form-row"><label>Status</label><select id="f-status"><option${(d.status||'Active')==='Active'?' selected':''}>Active</option><option${d.status==='Won'?' selected':''}>Won</option><option${d.status==='Lost'?' selected':''}>Lost</option></select></div></div>`;
   } else if(mode==='deleteDeal'){
-    const d=deals.find(x=>x.id===extra);title.textContent='Delete deal';
+    const d=deals.find(x=>String(x.id)===String(extra));title.textContent='Delete deal';
     saveBtn.className='btn danger';saveBtn.textContent='Yes, delete';
     const qCount=quotesForDeal(extra).length;
     body.innerHTML=`<div class="confirm-box"><i class="ti ti-alert-triangle"></i> Delete <strong>${d.opportunity}</strong> for ${d.company} (${fmt(d.value)})?${qCount?` <strong>${qCount} uploaded quote${qCount!==1?'s':''} will also be permanently deleted.</strong>`:''} This cannot be undone.</div>`;
@@ -2099,7 +2099,7 @@ function openModal(mode,extra){
       <span class="detail-label">Outcome</span><span style="white-space:pre-wrap">${a.outcome||'—'}</span>
     </div>`;
   } else if(mode==='viewDeal'){
-    const d=deals.find(x=>x.id===extra);
+    const d=deals.find(x=>String(x.id)===String(extra));
     const qs=quotesForDeal(d.id);
     title.textContent='Deal details';saveBtn.style.display='none';
     body.innerHTML=`<div class="detail-grid">
@@ -2220,7 +2220,7 @@ async function saveModal(){
       deals.unshift(row);toast('Deal added');closeModal();renderDeals();
     } else if(modalMode==='editDeal'){
       const updates={rep:g('f-rep'),customer:g('f-cust'),company:g('f-company'),opportunity:g('f-opp'),stage:g('f-stage'),value:parseFloat(g('f-value'))||0,prob:parseFloat(g('f-prob'))||0,close:g('f-close')||null,status:g('f-status')};
-      await dbUpdate('deals',targetId,updates);const d=deals.find(x=>x.id===targetId);Object.assign(d,updates);
+      await dbUpdate('deals',targetId,updates);const d=deals.find(x=>String(x.id)===String(targetId));Object.assign(d,updates);
       toast('Deal updated');closeModal();renderDeals();
     } else if(modalMode==='deleteDeal'){
       // Delete all quotes for this deal first
