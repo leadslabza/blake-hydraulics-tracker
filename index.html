@@ -341,32 +341,19 @@ tr:hover td{background:var(--bg-secondary)}
       </div>
       <div id="wip-filters" style="display:none;padding:12px 14px;background:var(--bg-secondary);border:0.5px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:12px">
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Job #</label>
-            <input type="text" id="wf-jobnum" placeholder="e.g. 1042" oninput="renderWIP()" style="width:100%"></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Customer</label>
-            <input type="text" id="wf-customer" placeholder="Name…" oninput="renderWIP()" style="width:100%"></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Nature of job</label>
-            <input type="text" id="wf-nature" placeholder="Keywords…" oninput="renderWIP()" style="width:100%"></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Quote #</label>
-            <input type="text" id="wf-quote" placeholder="e.g. Q-001" oninput="renderWIP()" style="width:100%"></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Sales order</label>
-            <input type="text" id="wf-so" placeholder="SO number…" oninput="renderWIP()" style="width:100%"></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Invoice</label>
-            <input type="text" id="wf-invoice" placeholder="INV number…" oninput="renderWIP()" style="width:100%"></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Delivery from</label>
-            <input type="date" id="wf-delivery-from" oninput="renderWIP()" style="width:100%"></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Delivery to</label>
-            <input type="date" id="wf-delivery-to" oninput="renderWIP()" style="width:100%"></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Deposit paid</label>
-            <select id="wf-dep-paid" onchange="renderWIP()" style="width:100%"><option value="">Any</option><option value="yes">Yes</option><option value="no">No</option></select></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Paid in full</label>
-            <select id="wf-paid-full" onchange="renderWIP()" style="width:100%"><option value="">Any</option><option value="yes">Yes</option><option value="no">No</option></select></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Total min (R)</label>
-            <input type="number" id="wf-total-min" placeholder="0" oninput="renderWIP()" style="width:100%"></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Total max (R)</label>
-            <input type="number" id="wf-total-max" placeholder="∞" oninput="renderWIP()" style="width:100%"></div>
-          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Notes / staff</label>
-            <input type="text" id="wf-notes" placeholder="Keywords…" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Job #</label><input type="text" id="wf-jobnum" placeholder="e.g. 1042" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Customer</label><input type="text" id="wf-customer" placeholder="Name…" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Nature of job</label><input type="text" id="wf-nature" placeholder="Keywords…" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Quote #</label><input type="text" id="wf-quote" placeholder="e.g. Q-001" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Sales order</label><input type="text" id="wf-so" placeholder="SO number…" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Invoice</label><input type="text" id="wf-invoice" placeholder="INV number…" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Delivery from</label><input type="date" id="wf-delivery-from" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Delivery to</label><input type="date" id="wf-delivery-to" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Deposit paid</label><select id="wf-dep-paid" onchange="renderWIP()" style="width:100%"><option value="">Any</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Paid in full</label><select id="wf-paid-full" onchange="renderWIP()" style="width:100%"><option value="">Any</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Total min (R)</label><input type="number" id="wf-total-min" placeholder="0" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Total max (R)</label><input type="number" id="wf-total-max" placeholder="∞" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Notes / staff</label><input type="text" id="wf-notes" placeholder="Keywords…" oninput="renderWIP()" style="width:100%"></div>
         </div>
       </div>
       <div class="kpi-grid" id="wip-kpi" style="margin-bottom:20px"></div>
@@ -1892,103 +1879,176 @@ async function togglePlannerEntry(id,completed){
 
 function buildPlannerPDF(){
   const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
-  const PW=841.89,PH=595.28;
+  // Portrait A4 — better for multi-page vertical lists
+  const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
+  const PW=595.28,PH=841.89;
   const NAVY=[15,30,68],LG=[245,247,250],MG=[220,225,235],WHITE=[255,255,255];
-  const TEAL=[13,148,136];
+  const BLUE_BG=[219,234,254],BLUE_FG=[29,78,216];
+  const GREEN_BG=[220,252,231],GREEN_FG=[22,101,52];
+  const GREY=[107,114,128];
 
   const ws=plannerWeekStart||getMondayOf(today());
   const days=DAY_NAMES.map((_,i)=>addDays(ws,i));
   const weekEntries=plannerEntries.filter(e=>e.week_start===ws);
   const staffList=teamMembers.map(m=>m.name);
 
-  // Header bar
-  doc.setFillColor(...NAVY);doc.rect(0,0,PW,48,'F');
-  doc.setFontSize(18);doc.setFont('helvetica','bold');doc.setTextColor(...WHITE);
-  doc.text('B.O.S',30,30);
-  doc.setFontSize(10);doc.setFont('helvetica','normal');
-  doc.text('Blake Operating System',30,42);
-  doc.setFontSize(13);doc.setFont('helvetica','bold');
-  doc.text('TEAM PLANNER',PW-30,30,{align:'right'});
-  doc.setFontSize(9);doc.setFont('helvetica','normal');
-  doc.text(`${fmtDate(days[0])} – ${fmtDate(days[6])}`,PW-30,42,{align:'right'});
+  const marginL=36,marginR=36,contentW=PW-marginL-marginR;
+  const HEADER_H=52,FOOTER_H=24,PAGE_TOP=HEADER_H+16,PAGE_BOTTOM=PH-FOOTER_H-16;
 
-  // Grid dimensions
-  const marginL=30,marginR=30,gridTop=68;
-  const gridW=PW-marginL-marginR;
-  const COL0=120; // staff name column width
-  const dayW=(gridW-COL0)/7;
-  const rowH=Math.min(80,Math.floor((PH-gridTop-50)/Math.max(staffList.length+1,2)));
+  // ── helpers ──────────────────────────────────────────────────────
+  function drawPageHeader(pageNum){
+    doc.setFillColor(...NAVY);doc.rect(0,0,PW,HEADER_H,'F');
+    doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(...WHITE);
+    doc.text('B.O.S',marginL,32);
+    doc.setFontSize(8);doc.setFont('helvetica','normal');
+    doc.text('Blake Operating System',marginL,44);
+    doc.setFontSize(11);doc.setFont('helvetica','bold');
+    doc.text('TEAM PLANNER',PW-marginR,32,{align:'right'});
+    doc.setFontSize(8);doc.setFont('helvetica','normal');
+    doc.text(`${fmtDate(days[0])} – ${fmtDate(days[6])}  |  Page ${pageNum}`,PW-marginR,44,{align:'right'});
+  }
+  function drawPageFooter(){
+    doc.setFillColor(...NAVY);doc.rect(0,PH-FOOTER_H,PW,FOOTER_H,'F');
+    doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...WHITE);
+    doc.text(`Generated ${fmtDate(today())} | B.O.S — Blake Operating System`,PW/2,PH-8,{align:'center'});
+  }
 
-  // Header row
-  doc.setFillColor(...LG);
-  doc.rect(marginL,gridTop,gridW,20,'F');
-  doc.setDrawColor(...MG);
-  doc.rect(marginL,gridTop,gridW,20,'S');
-  doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...NAVY);
-  doc.text('TEAM MEMBER',marginL+6,gridTop+13);
-  days.forEach((d,i)=>{
-    const x=marginL+COL0+i*dayW;
-    doc.text(`${DAY_SHORT[i].toUpperCase()} ${fmtDate(d)}`,x+dayW/2,gridTop+13,{align:'center'});
-  });
+  let pageNum=1;
+  let cy=PAGE_TOP; // current y cursor
 
-  // Staff rows
-  staffList.forEach((name,ri)=>{
-    const y=gridTop+20+ri*rowH;
-    // Row background
-    doc.setFillColor(...(ri%2===0?WHITE:LG));
-    doc.rect(marginL,y,gridW,rowH,'F');
-    doc.setDrawColor(...MG);
-    doc.rect(marginL,y,gridW,rowH,'S');
+  function ensureSpace(needed){
+    if(cy+needed>PAGE_BOTTOM){
+      drawPageFooter();
+      doc.addPage();
+      pageNum++;
+      drawPageHeader(pageNum);
+      cy=PAGE_TOP;
+    }
+  }
 
-    // Staff name cell
-    doc.setFillColor(...LG);
-    doc.rect(marginL,y,COL0,rowH,'F');
-    doc.setDrawColor(...MG);
-    doc.rect(marginL,y,COL0,rowH,'S');
-    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...NAVY);
-    const nameLines=doc.splitTextToSize(name,COL0-10);
-    doc.text(nameLines,marginL+5,y+12);
+  // ── first page header ─────────────────────────────────────────────
+  drawPageHeader(pageNum);
 
-    // Day cells
+  // ── render each staff member ──────────────────────────────────────
+  staffList.forEach((name,si)=>{
+    const staffEntries=weekEntries.filter(e=>e.staff_name===name);
+
+    // Staff name banner
+    ensureSpace(24);
+    doc.setFillColor(...NAVY);
+    doc.rect(marginL,cy,contentW,20,'F');
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(...WHITE);
+    doc.text(name.toUpperCase(),marginL+8,cy+13);
+    cy+=20;
+
+    // For each day that has entries (or show all days)
     days.forEach((d,di)=>{
-      const x=marginL+COL0+di*dayW;
-      const cellEntries=weekEntries.filter(e=>e.staff_name===name&&e.day_index===di);
-      doc.setDrawColor(...MG);
-      doc.rect(x,y,dayW,rowH,'S');
+      const dayEntries=weekEntries.filter(e=>e.staff_name===name&&e.day_index===di);
 
-      let ey=y+9;
-      cellEntries.forEach((e,ei)=>{
-        if(ey>y+rowH-6)return;
-        const wj=wipJobs.find(j=>j.id===e.job_id);
-        const title=wj?`${wj.customer||''}: ${wj.nature_of_job||''}`.trim():e.custom_task||'Task';
-        const isDone=e.completed;
-        // Entry chip background — green if done, blue if pending
-        doc.setFillColor(...(isDone?[220,252,231]:[219,234,254]));
-        doc.roundedRect(x+3,ey-6,dayW-6,ei===cellEntries.length-1?Math.min(16,rowH-ey+y-2):14,2,2,'F');
-        // Status indicator dot
-        doc.setFillColor(...(isDone?[22,101,52]:[29,78,216]));
-        doc.circle(x+8,ey-1,2,'F');
-        doc.setFontSize(6.5);doc.setFont('helvetica',isDone?'normal':'bold');
-        doc.setTextColor(...(isDone?[22,101,52]:NAVY));
-        const tLines=doc.splitTextToSize(title,dayW-18);
-        doc.text(tLines[0],x+13,ey);
-        if(e.notes&&ey+9<y+rowH-2){
-          doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(107,114,128);
-          const nLines=doc.splitTextToSize(e.notes,dayW-18);
-          doc.text(nLines[0],x+13,ey+7);
-          ey+=7;
-        }
-        ey+=10;
-      });
+      // Day sub-header
+      ensureSpace(18);
+      const isWknd=di>=5;
+      doc.setFillColor(...(isWknd?[230,230,240]:LG));
+      doc.rect(marginL,cy,contentW,16,'F');
+      doc.setDrawColor(...MG);doc.rect(marginL,cy,contentW,16,'S');
+      doc.setFontSize(8);doc.setFont('helvetica','bold');
+      doc.setTextColor(...(isWknd?[120,120,160]:NAVY));
+      doc.text(`${DAY_NAMES[di].toUpperCase()}  ${fmtDate(d)}`,marginL+6,cy+11);
+      const entryCount=dayEntries.length;
+      doc.setFont('helvetica','normal');doc.setFontSize(7);
+      doc.setTextColor(...GREY);
+      doc.text(`${entryCount} task${entryCount!==1?'s':''}`,PW-marginR-4,cy+11,{align:'right'});
+      cy+=16;
+
+      if(!dayEntries.length){
+        // Empty day — just a short placeholder row
+        ensureSpace(14);
+        doc.setFillColor(...WHITE);doc.rect(marginL,cy,contentW,12,'F');
+        doc.setDrawColor(...MG);doc.rect(marginL,cy,contentW,12,'S');
+        doc.setFontSize(7);doc.setFont('helvetica','italic');doc.setTextColor(...GREY);
+        doc.text('No tasks',marginL+8,cy+8);
+        cy+=12;
+      } else {
+        dayEntries.forEach((e,ei)=>{
+          const wj=wipJobs.find(j=>j.id===e.job_id);
+          const isDone=e.completed;
+
+          // Build full title
+          let title='';
+          if(wj){
+            title=`${wj.customer||''}${wj.nature_of_job?': '+wj.nature_of_job:''}`.trim();
+          } else {
+            title=e.custom_task||'Task';
+          }
+
+          // Build detail lines
+          const details=[];
+          if(wj){
+            if(wj.job_number) details.push(`Job #: ${wj.job_number}`);
+            if(wj.quote_number) details.push(`Quote: ${wj.quote_number}`);
+            if(wj.sales_order) details.push(`SO: ${wj.sales_order}`);
+            if(wj.invoice) details.push(`Invoice: ${wj.invoice}`);
+            if(wj.delivery_date) details.push(`Delivery: ${fmtDate(wj.delivery_date)}`);
+            if(wj.status) details.push(`Status: ${wj.status}`);
+            if(wj.total_amount) details.push(`Total: R${(wj.total_amount||0).toLocaleString()}`);
+            if(wj.staff_notes) details.push(`Job notes: ${wj.staff_notes}`);
+          }
+          if(e.notes) details.push(`Task notes: ${e.notes}`);
+
+          // Measure height needed
+          const titleLines=doc.setFontSize(8)||doc.splitTextToSize(title,contentW-24);
+          doc.setFontSize(8);
+          const tLines=doc.splitTextToSize(title,contentW-24);
+          const dLineArr=details.map(dt=>{doc.setFontSize(7);return doc.splitTextToSize(dt,contentW-28);});
+          const totalLines=tLines.length+dLineArr.reduce((s,l)=>s+l.length,0);
+          const entryH=Math.max(20,8+tLines.length*10+dLineArr.reduce((s,l)=>s+l.length*9,0)+6);
+
+          ensureSpace(entryH);
+
+          // Entry background
+          doc.setFillColor(...(isDone?GREEN_BG:BLUE_BG));
+          doc.roundedRect(marginL,cy,contentW,entryH-2,2,2,'F');
+          doc.setDrawColor(...(isDone?GREEN_FG:BLUE_FG));
+          doc.roundedRect(marginL,cy,contentW,entryH-2,2,2,'S');
+
+          // Status dot
+          doc.setFillColor(...(isDone?GREEN_FG:BLUE_FG));
+          doc.circle(marginL+8,cy+10,3,'F');
+
+          // Title
+          let ey=cy+11;
+          doc.setFontSize(8);doc.setFont('helvetica','bold');
+          doc.setTextColor(...(isDone?GREEN_FG:NAVY));
+          tLines.forEach(line=>{doc.text(line,marginL+16,ey);ey+=10;});
+
+          // Detail lines
+          if(details.length){
+            dLineArr.forEach(lines=>{
+              doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...GREY);
+              lines.forEach(line=>{doc.text(line,marginL+16,ey);ey+=9;});
+            });
+          }
+
+          // Done badge
+          if(isDone){
+            doc.setFillColor(...GREEN_FG);
+            doc.roundedRect(PW-marginR-34,cy+4,30,10,2,2,'F');
+            doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(...WHITE);
+            doc.text('DONE',PW-marginR-19,cy+11,{align:'center'});
+          }
+
+          cy+=entryH;
+        });
+      }
+
+      cy+=4; // gap between days
     });
+
+    cy+=10; // gap between staff members
   });
 
-  // Footer
-  doc.setFillColor(...NAVY);doc.rect(0,PH-22,PW,22,'F');
-  doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(...WHITE);
-  doc.text(`Generated ${fmtDate(today())} | B.O.S — Blake Operating System`,PW/2,PH-8,{align:'center'});
-
+  // ── footer on last page ───────────────────────────────────────────
+  drawPageFooter();
   return doc;
 }
 
