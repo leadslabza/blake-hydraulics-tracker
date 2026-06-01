@@ -205,6 +205,9 @@ tr.drag-over{box-shadow:0 -2px 0 var(--accent) inset}
 .planner-staff-cell.drag-handle-cell:active{cursor:grabbing}
 tr.planner-dragging{opacity:.35}
 tr.planner-drag-over{box-shadow:0 -2px 0 var(--accent) inset}
+.planner-entry.task-dragging{opacity:.3;box-shadow:none}
+.planner-entry.task-drag-over{box-shadow:0 -2px 0 var(--accent),0 0 0 1.5px var(--accent)}
+.planner-day-cell.cell-drag-over{background:var(--info-bg)!important;outline:1.5px dashed var(--accent)}
 .wip-section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:10px 14px;background:var(--bg-secondary);border-radius:var(--radius-md);border:0.5px solid var(--border-light)}
 .wip-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
 .wip-staff-row{display:grid;grid-template-columns:140px 1fr auto auto;gap:6px;align-items:center;margin-bottom:6px}
@@ -429,6 +432,7 @@ let plannerEntries=[], plannerWeekStart=null, teamMembers=[], plannerTaskRows=[]
 // Drag & drop order state (in-memory + localStorage)
 let wipOrder={};   // { status: [id, id, …] }
 let plannerOrder=[];  // [name, name, …]
+let plannerTaskOrder={};  // { 'staffName|dayIndex|weekStart': [entryId, …] }
 let performanceTimesheets=[];
 
 // ═══════════════════════════════════════════════════════════════
@@ -556,7 +560,7 @@ async function doLogin(){
 }
 
 function doLogout(){
-  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];plannerEntries=[];plannerWeekStart=null;teamMembers=[];plannerTaskRows=[];performanceTimesheets=[];wipOrder={};plannerOrder=[];
+  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];plannerEntries=[];plannerWeekStart=null;teamMembers=[];plannerTaskRows=[];performanceTimesheets=[];wipOrder={};plannerOrder=[];plannerTaskOrder={};
   document.getElementById('login-screen').style.display='block';
   document.getElementById('main-app').style.display='none';
   document.getElementById('login-user').value='';document.getElementById('login-pass').value='';
@@ -1796,19 +1800,20 @@ function renderPlanner(){
   </tr></thead><tbody>`;
 
   teamMembers.forEach(m=>{
-    h+=`<tr draggable="true" data-member="${m.name}" class="planner-row"><td class="planner-staff-cell" title="Drag to reorder"><i class="ti ti-grip-vertical" style="color:var(--text-tertiary);margin-right:5px;font-size:12px"></i>${m.name}</td>`;
+    h+=`<tr data-member="${m.name}" class="planner-row"><td class="planner-staff-cell planner-row-handle" title="Drag to reorder" style="cursor:grab"><i class="ti ti-grip-vertical" style="color:var(--text-tertiary);margin-right:5px;font-size:12px"></i>${m.name}</td>`;
     days.forEach((d,di)=>{
       const cellEntries=weekEntries.filter(e=>e.staff_name===m.name&&e.day_index===di);
       const isTodayCol=d===todayStr;
       const isWknd=di>=5;
-      h+=`<td class="planner-day-cell"${isTodayCol?' style="background:var(--info-bg)"':isWknd?' style="background:var(--bg-tertiary)"':''}>`;
+      h+=`<td class="planner-day-cell" data-staff="${m.name}" data-day="${di}" data-ws="${ws}"${isTodayCol?' style="background:var(--info-bg)"':isWknd?' style="background:var(--bg-tertiary)"':''}>`;
       cellEntries.forEach(e=>{
         const wj=wipJobs.find(j=>j.id===e.job_id);
         const title=wj?`${wj.customer||'Job'} — ${wj.nature_of_job||''}`:e.custom_task||'Task';
         const sub=e.notes||'';
-        h+=`<div class="planner-entry${e.completed?' done':''}" onclick="openModal('plannerEdit','${e.id}')">
+        h+=`<div class="planner-entry${e.completed?' done':''}" draggable="true" data-entry-id="${e.id}" data-staff="${m.name}" data-day="${di}" data-ws="${ws}" onclick="openModal('plannerEdit','${e.id}')">
+          <span class="drag-handle" style="position:absolute;left:25px;top:6px;font-size:11px" onclick="event.stopPropagation()" title="Drag to reorder"><i class="ti ti-grip-vertical"></i></span>
           <input type="checkbox" class="planner-entry-chk" ${e.completed?'checked':''} onclick="event.stopPropagation();togglePlannerEntry('${e.id}',this.checked)" title="${e.completed?'Mark pending':'Mark complete'}">
-          <div class="planner-entry-title" title="${title.replace(/"/g,'&quot;')}">${title.length>38?title.slice(0,36)+'…':title}</div>
+          <div class="planner-entry-title" style="padding-left:14px" title="${title.replace(/"/g,'&quot;')}">${title.length>38?title.slice(0,36)+'…':title}</div>
           ${sub?`<div class="planner-entry-sub">${sub.length>40?sub.slice(0,38)+'…':sub}</div>`:''}
           <button class="planner-entry-del" onclick="event.stopPropagation();deletePlannerEntry('${e.id}')" title="Remove"><i class="ti ti-x"></i></button>
         </div>`;
@@ -2430,6 +2435,28 @@ function loadSavedOrders(){
       teamMembers.length=0;
       ordered.forEach(m=>teamMembers.push(m));
     }
+    // Restore task order within each cell
+    if(saved.tasks){
+      plannerTaskOrder=saved.tasks;
+      const keys=Object.keys(plannerTaskOrder);
+      keys.forEach(key=>{
+        const ids=plannerTaskOrder[key];
+        if(!ids||!ids.length)return;
+        const [staff,dayStr,ws]=key.split('|');
+        const day=parseInt(dayStr);
+        const group=plannerEntries.filter(e=>e.staff_name===staff&&e.day_index===day&&e.week_start===ws);
+        const ordered=[];
+        ids.forEach(id=>{ const e=group.find(x=>String(x.id)===String(id)); if(e)ordered.push(e); });
+        group.forEach(e=>{ if(!ordered.find(x=>x.id===e.id))ordered.push(e); });
+        // replace positions in plannerEntries
+        let gi=0;
+        plannerEntries.forEach((e,i)=>{
+          if(e.staff_name===staff&&e.day_index===day&&e.week_start===ws){
+            plannerEntries[i]=ordered[gi++];
+          }
+        });
+      });
+    }
   }catch(e){}
 }
 
@@ -2437,11 +2464,17 @@ function saveOrders(){
   try{
     const allStatuses=['Jobs On The Go','Awaiting Approval','Job Complete'];
     const wip={};
-    allStatuses.forEach(st=>{
-      wip[st]=wipJobs.filter(j=>j.status===st).map(j=>String(j.id));
-    });
+    allStatuses.forEach(st=>{ wip[st]=wipJobs.filter(j=>j.status===st).map(j=>String(j.id)); });
     const planner=teamMembers.map(m=>m.name);
-    localStorage.setItem(orderKey(),JSON.stringify({wip,planner}));
+    // Save task order per cell
+    const tasks={};
+    const ws=plannerWeekStart||getMondayOf(today());
+    plannerEntries.filter(e=>e.week_start===ws).forEach(e=>{
+      const key=`${e.staff_name}|${e.day_index}|${e.week_start}`;
+      if(!tasks[key])tasks[key]=[];
+      if(!tasks[key].includes(String(e.id)))tasks[key].push(String(e.id));
+    });
+    localStorage.setItem(orderKey(),JSON.stringify({wip,planner,tasks}));
   }catch(e){}
 }
 
@@ -2494,43 +2527,144 @@ function initWIPDrag(){
 
 // ── Planner drag ──────────────────────────────────────────────────
 function initPlannerDrag(){
-  let dragSrc=null;
-  document.querySelectorAll('#planner-content tr[draggable]').forEach(row=>{
+  // ── Row (staff member) drag — triggered only from the staff cell handle ──
+  let rowDragSrc=null;
+  document.querySelectorAll('#planner-content tr[data-member]').forEach(row=>{
+    const handle=row.querySelector('.planner-row-handle');
+    if(handle){
+      // Make only the handle cell initiate the drag
+      handle.addEventListener('mousedown',()=>{ row.draggable=true; });
+      handle.addEventListener('mouseleave',()=>{ if(!rowDragSrc)row.draggable=false; });
+    }
     row.addEventListener('dragstart',e=>{
-      dragSrc=row;
+      // Only proceed if drag originated from handle
+      if(!e.target.closest('.planner-row-handle'))return e.preventDefault();
+      rowDragSrc=row;
       row.classList.add('planner-dragging');
       e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain','row:'+row.dataset.member);
     });
     row.addEventListener('dragend',()=>{
+      row.draggable=false;
       row.classList.remove('planner-dragging');
       document.querySelectorAll('#planner-content tr.planner-drag-over').forEach(r=>r.classList.remove('planner-drag-over'));
-      dragSrc=null;
+      rowDragSrc=null;
     });
     row.addEventListener('dragover',e=>{
+      if(!rowDragSrc||rowDragSrc===row)return;
+      const data=e.dataTransfer.getData('text/plain')||'';
+      if(data&&!data.startsWith('row:'))return;
       e.preventDefault();
-      if(!dragSrc||dragSrc===row)return;
       e.dataTransfer.dropEffect='move';
       document.querySelectorAll('#planner-content tr.planner-drag-over').forEach(r=>r.classList.remove('planner-drag-over'));
       row.classList.add('planner-drag-over');
     });
-    row.addEventListener('dragleave',()=>row.classList.remove('planner-drag-over'));
+    row.addEventListener('dragleave',e=>{
+      if(!e.relatedTarget||!row.contains(e.relatedTarget))row.classList.remove('planner-drag-over');
+    });
     row.addEventListener('drop',e=>{
+      if(!rowDragSrc||rowDragSrc===row)return;
       e.preventDefault();
-      if(!dragSrc||dragSrc===row)return;
       row.classList.remove('planner-drag-over');
-      const srcName=dragSrc.dataset.member;
+      const srcName=rowDragSrc.dataset.member;
       const tgtName=row.dataset.member;
       const srcIdx=teamMembers.findIndex(m=>m.name===srcName);
       const tgtIdx=teamMembers.findIndex(m=>m.name===tgtName);
       if(srcIdx<0||tgtIdx<0)return;
       const [moved]=teamMembers.splice(srcIdx,1);
       const newTgt=teamMembers.findIndex(m=>m.name===tgtName);
-      const insertAt=srcIdx>tgtIdx?newTgt:newTgt+1;
-      teamMembers.splice(insertAt,0,moved);
+      teamMembers.splice(srcIdx>tgtIdx?newTgt:newTgt+1,0,moved);
       saveOrders();
       renderPlanner();
     });
   });
+
+  // ── Task (entry) drag — within any day cell ───────────────────────
+  let taskDragSrc=null;
+  document.querySelectorAll('#planner-content .planner-entry[draggable]').forEach(entry=>{
+    entry.addEventListener('dragstart',e=>{
+      e.stopPropagation(); // prevent row drag from firing
+      taskDragSrc=entry;
+      entry.classList.add('task-dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain','task:'+entry.dataset.entryId);
+    });
+    entry.addEventListener('dragend',()=>{
+      entry.classList.remove('task-dragging');
+      document.querySelectorAll('#planner-content .planner-entry.task-drag-over').forEach(el=>el.classList.remove('task-drag-over'));
+      document.querySelectorAll('#planner-content td.cell-drag-over').forEach(el=>el.classList.remove('cell-drag-over'));
+      taskDragSrc=null;
+    });
+    entry.addEventListener('dragover',e=>{
+      e.stopPropagation();
+      if(!taskDragSrc||taskDragSrc===entry)return;
+      e.preventDefault();
+      document.querySelectorAll('#planner-content .planner-entry.task-drag-over').forEach(el=>el.classList.remove('task-drag-over'));
+      entry.classList.add('task-drag-over');
+    });
+    entry.addEventListener('dragleave',e=>{
+      if(!e.relatedTarget||!entry.contains(e.relatedTarget))entry.classList.remove('task-drag-over');
+    });
+    entry.addEventListener('drop',e=>{
+      e.stopPropagation();
+      if(!taskDragSrc||taskDragSrc===entry)return;
+      e.preventDefault();
+      entry.classList.remove('task-drag-over');
+      reorderTask(taskDragSrc,{beforeEntry:entry});
+    });
+  });
+
+  // ── Cell drop zone (drop at end of a cell) ─────────────────────
+  document.querySelectorAll('#planner-content td.planner-day-cell').forEach(cell=>{
+    cell.addEventListener('dragover',e=>{
+      if(!taskDragSrc)return;
+      e.preventDefault();
+      e.stopPropagation();
+      cell.classList.add('cell-drag-over');
+    });
+    cell.addEventListener('dragleave',e=>{
+      if(!e.relatedTarget||!cell.contains(e.relatedTarget))cell.classList.remove('cell-drag-over');
+    });
+    cell.addEventListener('drop',e=>{
+      if(!taskDragSrc)return;
+      e.preventDefault();
+      e.stopPropagation();
+      cell.classList.remove('cell-drag-over');
+      reorderTask(taskDragSrc,{cell});
+    });
+  });
+}
+
+function reorderTask(srcEl,{beforeEntry,cell}){
+  const srcId=String(srcEl.dataset.entryId);
+  const srcStaff=srcEl.dataset.staff;
+  const srcDay=parseInt(srcEl.dataset.day);
+  const srcWs=srcEl.dataset.ws;
+  const key=`${srcStaff}|${srcDay}|${srcWs}`;
+
+  // Get the ordered group for this cell
+  const group=plannerEntries.filter(e=>e.staff_name===srcStaff&&e.day_index===srcDay&&e.week_start===srcWs);
+  const srcIdx=group.findIndex(e=>String(e.id)===srcId);
+  if(srcIdx<0)return;
+  const [moved]=group.splice(srcIdx,1);
+
+  if(beforeEntry){
+    const tgtId=String(beforeEntry.dataset.entryId);
+    const tgtIdx=group.findIndex(e=>String(e.id)===tgtId);
+    group.splice(srcIdx>tgtIdx?tgtIdx:tgtIdx,0,moved);
+  } else {
+    group.push(moved); // drop on cell = append to end
+  }
+
+  // Write the new order back into plannerEntries
+  let gi=0;
+  plannerEntries.forEach((e,i)=>{
+    if(e.staff_name===srcStaff&&e.day_index===srcDay&&e.week_start===srcWs){
+      plannerEntries[i]=group[gi++];
+    }
+  });
+  saveOrders();
+  renderPlanner();
 }
 
 </script>
