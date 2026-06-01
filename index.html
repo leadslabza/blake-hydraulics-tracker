@@ -328,14 +328,46 @@ tr:hover td{background:var(--bg-secondary)}
 
     <div id="tab-wip" class="panel">
       <div class="toolbar">
-        <input type="text" id="wip-search" placeholder="Search jobs…" oninput="renderWIP()">
+        <input type="text" id="wip-search" placeholder="Search all columns…" oninput="renderWIP()">
         <select id="wip-status-filter" onchange="renderWIP()">
           <option value="">All statuses</option>
           <option>Jobs On The Go</option>
           <option>Awaiting Approval</option>
           <option>Job Complete</option>
         </select>
+        <button class="btn" id="wip-filter-toggle" onclick="toggleWIPFilters()"><i class="ti ti-adjustments-horizontal"></i> Filters</button>
+        <button class="btn" id="wip-filter-clear" onclick="clearWIPFilters()" style="display:none"><i class="ti ti-x"></i> Clear</button>
         <button class="btn primary" onclick="openModal('wipAdd')"><i class="ti ti-plus"></i> Add job</button>
+      </div>
+      <div id="wip-filters" style="display:none;padding:12px 14px;background:var(--bg-secondary);border:0.5px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Job #</label>
+            <input type="text" id="wf-jobnum" placeholder="e.g. 1042" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Customer</label>
+            <input type="text" id="wf-customer" placeholder="Name…" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Nature of job</label>
+            <input type="text" id="wf-nature" placeholder="Keywords…" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Quote #</label>
+            <input type="text" id="wf-quote" placeholder="e.g. Q-001" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Sales order</label>
+            <input type="text" id="wf-so" placeholder="SO number…" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Invoice</label>
+            <input type="text" id="wf-invoice" placeholder="INV number…" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Delivery from</label>
+            <input type="date" id="wf-delivery-from" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Delivery to</label>
+            <input type="date" id="wf-delivery-to" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Deposit paid</label>
+            <select id="wf-dep-paid" onchange="renderWIP()" style="width:100%"><option value="">Any</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Paid in full</label>
+            <select id="wf-paid-full" onchange="renderWIP()" style="width:100%"><option value="">Any</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Total min (R)</label>
+            <input type="number" id="wf-total-min" placeholder="0" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Total max (R)</label>
+            <input type="number" id="wf-total-max" placeholder="∞" oninput="renderWIP()" style="width:100%"></div>
+          <div><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);display:block;margin-bottom:3px">Notes / staff</label>
+            <input type="text" id="wf-notes" placeholder="Keywords…" oninput="renderWIP()" style="width:100%"></div>
+        </div>
       </div>
       <div class="kpi-grid" id="wip-kpi" style="margin-bottom:20px"></div>
       <div id="wip-content"></div>
@@ -1577,6 +1609,19 @@ function renderPerformance(){
 function renderWIP(){
   const search=(document.getElementById('wip-search')?.value||'').toLowerCase();
   const statusFilter=document.getElementById('wip-status-filter')?.value||'';
+  const wfJobnum=(document.getElementById('wf-jobnum')?.value||'').toLowerCase();
+  const wfCustomer=(document.getElementById('wf-customer')?.value||'').toLowerCase();
+  const wfNature=(document.getElementById('wf-nature')?.value||'').toLowerCase();
+  const wfQuote=(document.getElementById('wf-quote')?.value||'').toLowerCase();
+  const wfSO=(document.getElementById('wf-so')?.value||'').toLowerCase();
+  const wfInvoice=(document.getElementById('wf-invoice')?.value||'').toLowerCase();
+  const wfDeliveryFrom=document.getElementById('wf-delivery-from')?.value||'';
+  const wfDeliveryTo=document.getElementById('wf-delivery-to')?.value||'';
+  const wfDepPaid=document.getElementById('wf-dep-paid')?.value||'';
+  const wfPaidFull=document.getElementById('wf-paid-full')?.value||'';
+  const wfTotalMin=document.getElementById('wf-total-min')?.value!==''?parseFloat(document.getElementById('wf-total-min').value):null;
+  const wfTotalMax=document.getElementById('wf-total-max')?.value!==''?parseFloat(document.getElementById('wf-total-max').value):null;
+  const wfNotes=(document.getElementById('wf-notes')?.value||'').toLowerCase();
 
   const active=wipJobs.filter(j=>j.status==='Jobs On The Go');
   const awaiting=wipJobs.filter(j=>j.status==='Awaiting Approval');
@@ -1591,7 +1636,28 @@ function renderWIP(){
 
   const filtered=wipJobs.filter(j=>{
     if(statusFilter&&j.status!==statusFilter)return false;
-    if(search&&!((j.customer||'').toLowerCase().includes(search)||(j.nature_of_job||'').toLowerCase().includes(search)||(j.quote_number||'').toLowerCase().includes(search)||(j.sales_order||'').toLowerCase().includes(search)||(j.invoice||'').toLowerCase().includes(search)))return false;
+    if(search){
+      const allText=[(j.job_number||''),(j.customer||''),(j.nature_of_job||''),(j.quote_number||''),(j.sales_order||''),(j.invoice||''),(j.delivery_date||''),(j.expected_payment_date||''),(j.staff_notes||''),(j.total_amount||'').toString(),(j.deposit_amount||'').toString()].join(' ').toLowerCase();
+      if(!allText.includes(search))return false;
+    }
+    if(wfJobnum&&!(j.job_number||'').toLowerCase().includes(wfJobnum))return false;
+    if(wfCustomer&&!(j.customer||'').toLowerCase().includes(wfCustomer))return false;
+    if(wfNature&&!(j.nature_of_job||'').toLowerCase().includes(wfNature))return false;
+    if(wfQuote&&!(j.quote_number||'').toLowerCase().includes(wfQuote))return false;
+    if(wfSO&&!(j.sales_order||'').toLowerCase().includes(wfSO))return false;
+    if(wfInvoice&&!(j.invoice||'').toLowerCase().includes(wfInvoice))return false;
+    if(wfDeliveryFrom&&(j.delivery_date||'')< wfDeliveryFrom)return false;
+    if(wfDeliveryTo&&(j.delivery_date||'')>wfDeliveryTo)return false;
+    if(wfDepPaid==='yes'&&!j.deposit_paid)return false;
+    if(wfDepPaid==='no'&&j.deposit_paid)return false;
+    if(wfPaidFull==='yes'&&!j.paid_full)return false;
+    if(wfPaidFull==='no'&&j.paid_full)return false;
+    if(wfTotalMin!==null&&(j.total_amount||0)<wfTotalMin)return false;
+    if(wfTotalMax!==null&&(j.total_amount||0)>wfTotalMax)return false;
+    if(wfNotes){
+      const staffNames=(j.wip_staff_tasks||[]).map(t=>t.staff_name||'').join(' ').toLowerCase();
+      if(!(j.staff_notes||'').toLowerCase().includes(wfNotes)&&!staffNames.includes(wfNotes))return false;
+    }
     return true;
   });
 
@@ -1660,6 +1726,20 @@ function renderWIP(){
   document.getElementById('wip-content').innerHTML=h;
 }
 
+function toggleWIPFilters(){
+  const panel=document.getElementById('wip-filters');
+  const btn=document.getElementById('wip-filter-toggle');
+  const clearBtn=document.getElementById('wip-filter-clear');
+  const open=panel.style.display==='none'||!panel.style.display;
+  panel.style.display=open?'block':'none';
+  btn.classList.toggle('active',open);
+  clearBtn.style.display=open?'':'none';
+}
+function clearWIPFilters(){
+  ['wf-jobnum','wf-customer','wf-nature','wf-quote','wf-so','wf-invoice','wf-delivery-from','wf-delivery-to','wf-notes','wf-total-min','wf-total-max'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['wf-dep-paid','wf-paid-full'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderWIP();
+}
 function addWIPStaffRow(){wipStaffRows.push({name:'',task:'',completed:false});renderWIPStaffRows();}
 function removeWIPStaffRow(i){wipStaffRows.splice(i,1);renderWIPStaffRows();}
 function renderWIPStaffRows(){
