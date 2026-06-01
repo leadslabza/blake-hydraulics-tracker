@@ -197,6 +197,14 @@ tr:hover td{background:var(--bg-secondary)}
 .detail-full{grid-column:1/-1}
 /* ── WIP TRACKER ── */
 .wip-section-wrap{margin-bottom:24px}
+.drag-handle{cursor:grab;color:var(--text-tertiary);padding:0 4px;font-size:14px;line-height:1;display:inline-flex;align-items:center;user-select:none}
+.drag-handle:active{cursor:grabbing}
+tr.dragging{opacity:.35;background:var(--bg-tertiary)!important}
+tr.drag-over{box-shadow:0 -2px 0 var(--accent) inset}
+.planner-staff-cell.drag-handle-cell{cursor:grab}
+.planner-staff-cell.drag-handle-cell:active{cursor:grabbing}
+tr.planner-dragging{opacity:.35}
+tr.planner-drag-over{box-shadow:0 -2px 0 var(--accent) inset}
 .wip-section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:10px 14px;background:var(--bg-secondary);border-radius:var(--radius-md);border:0.5px solid var(--border-light)}
 .wip-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
 .wip-staff-row{display:grid;grid-template-columns:140px 1fr auto auto;gap:6px;align-items:center;margin-bottom:6px}
@@ -418,6 +426,9 @@ let users=[], activities=[], deals=[], quotes=[], forecasts={}, wipJobs=[];
 let modalMode='', targetId=null;
 let wipStaffRows=[];
 let plannerEntries=[], plannerWeekStart=null, teamMembers=[], plannerTaskRows=[];
+// Drag & drop order state (in-memory + localStorage)
+let wipOrder={};   // { status: [id, id, …] }
+let plannerOrder=[];  // [name, name, …]
 let performanceTimesheets=[];
 
 // ═══════════════════════════════════════════════════════════════
@@ -481,6 +492,7 @@ async function loadAllData(){
       sb.from('team_members').select('*').order('name'),
     ]);
     users=u||[];activities=a||[];deals=d||[];quotes=q||[];wipJobs=wj||[];plannerEntries=pe||[];teamMembers=tm||[];
+    loadSavedOrders();
     try{const{data:pts}=await sb.from('performance_timesheets').select('*').order('date',{ascending:false});performanceTimesheets=pts||[];}
     catch(pe2){console.warn('performance_timesheets not available:',pe2);performanceTimesheets=[];}
     forecasts={};
@@ -544,7 +556,7 @@ async function doLogin(){
 }
 
 function doLogout(){
-  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];plannerEntries=[];plannerWeekStart=null;teamMembers=[];plannerTaskRows=[];performanceTimesheets=[];
+  currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];plannerEntries=[];plannerWeekStart=null;teamMembers=[];plannerTaskRows=[];performanceTimesheets=[];wipOrder={};plannerOrder=[];
   document.getElementById('login-screen').style.display='block';
   document.getElementById('main-app').style.display='none';
   document.getElementById('login-user').value='';document.getElementById('login-pass').value='';
@@ -1677,9 +1689,10 @@ function renderWIP(){
         const noteTxt=j.staff_notes?j.staff_notes.slice(0,24)+(j.staff_notes.length>24?'…':''):'';
         const taskBadge=tasks.length?`<span class="badge b-blue" style="margin-top:2px;display:inline-block">${tasks.length} task${tasks.length!==1?'s':''}</span>`:'';
         const noteTitle=j.staff_notes?` title="${j.staff_notes.replace(/"/g,'&quot;')}"`:''
-        h+=`<tr class="row-link" onclick="openModal('viewWIP','${j.id}')">
+        h+=`<tr class="row-link" draggable="true" data-id="${j.id}" data-status="${st}" onclick="openModal('viewWIP','${j.id}')">
           <td style="white-space:nowrap;overflow:visible">
-            <div style="display:flex;gap:4px">
+            <div style="display:flex;gap:4px;align-items:center">
+              <span class="drag-handle" onclick="event.stopPropagation()" title="Drag to reorder"><i class="ti ti-grip-vertical"></i></span>
               <button class="icon-btn" onclick="event.stopPropagation();openModal('wipEdit','${j.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
               <button class="icon-btn del" onclick="event.stopPropagation();openModal('wipDelete','${j.id}')" title="Delete"><i class="ti ti-trash"></i></button>
             </div>
@@ -1705,6 +1718,7 @@ function renderWIP(){
     h+=`</div>`;
   });
   document.getElementById('wip-content').innerHTML=h;
+  initWIPDrag();
 }
 
 function toggleWIPFilters(){
@@ -1782,7 +1796,7 @@ function renderPlanner(){
   </tr></thead><tbody>`;
 
   teamMembers.forEach(m=>{
-    h+=`<tr><td class="planner-staff-cell">${m.name}</td>`;
+    h+=`<tr draggable="true" data-member="${m.name}" class="planner-row"><td class="planner-staff-cell" title="Drag to reorder"><i class="ti ti-grip-vertical" style="color:var(--text-tertiary);margin-right:5px;font-size:12px"></i>${m.name}</td>`;
     days.forEach((d,di)=>{
       const cellEntries=weekEntries.filter(e=>e.staff_name===m.name&&e.day_index===di);
       const isTodayCol=d===todayStr;
@@ -1807,6 +1821,7 @@ function renderPlanner(){
 
   h+=`</tbody></table></div>`;
   document.getElementById('planner-content').innerHTML=h;
+  initPlannerDrag();
 }
 
 async function addTeamMember(){
@@ -1879,31 +1894,22 @@ async function togglePlannerEntry(id,completed){
 
 function buildPlannerPDF(){
   const {jsPDF}=window.jspdf;
-  // Portrait A4 — better for multi-page vertical lists
   const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
   const PW=595.28,PH=841.89;
   const NAVY=[15,30,68],LG=[245,247,250],MG=[220,225,235],WHITE=[255,255,255];
-  const BLUE_BG=[219,234,254],BLUE_FG=[29,78,216];
-  const GREEN_BG=[220,252,231],GREEN_FG=[22,101,52];
-  const GREY=[107,114,128];
-
+  const BLUE_BG=[219,234,254],BLUE_FG=[29,78,216],GREEN_BG=[220,252,231],GREEN_FG=[22,101,52],GREY=[107,114,128];
   const ws=plannerWeekStart||getMondayOf(today());
   const days=DAY_NAMES.map((_,i)=>addDays(ws,i));
   const weekEntries=plannerEntries.filter(e=>e.week_start===ws);
   const staffList=teamMembers.map(m=>m.name);
-
   const marginL=36,marginR=36,contentW=PW-marginL-marginR;
   const HEADER_H=52,FOOTER_H=24,PAGE_TOP=HEADER_H+16,PAGE_BOTTOM=PH-FOOTER_H-16;
-
-  // ── helpers ──────────────────────────────────────────────────────
   function drawPageHeader(pageNum){
     doc.setFillColor(...NAVY);doc.rect(0,0,PW,HEADER_H,'F');
     doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(...WHITE);
     doc.text('B.O.S',marginL,32);
-    doc.setFontSize(8);doc.setFont('helvetica','normal');
-    doc.text('Blake Operating System',marginL,44);
-    doc.setFontSize(11);doc.setFont('helvetica','bold');
-    doc.text('TEAM PLANNER',PW-marginR,32,{align:'right'});
+    doc.setFontSize(8);doc.setFont('helvetica','normal');doc.text('Blake Operating System',marginL,44);
+    doc.setFontSize(11);doc.setFont('helvetica','bold');doc.text('TEAM PLANNER',PW-marginR,32,{align:'right'});
     doc.setFontSize(8);doc.setFont('helvetica','normal');
     doc.text(`${fmtDate(days[0])} – ${fmtDate(days[6])}  |  Page ${pageNum}`,PW-marginR,44,{align:'right'});
   }
@@ -1912,142 +1918,75 @@ function buildPlannerPDF(){
     doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...WHITE);
     doc.text(`Generated ${fmtDate(today())} | B.O.S — Blake Operating System`,PW/2,PH-8,{align:'center'});
   }
-
-  let pageNum=1;
-  let cy=PAGE_TOP; // current y cursor
-
+  let pageNum=1,cy=PAGE_TOP;
   function ensureSpace(needed){
-    if(cy+needed>PAGE_BOTTOM){
-      drawPageFooter();
-      doc.addPage();
-      pageNum++;
-      drawPageHeader(pageNum);
-      cy=PAGE_TOP;
-    }
+    if(cy+needed>PAGE_BOTTOM){drawPageFooter();doc.addPage();pageNum++;drawPageHeader(pageNum);cy=PAGE_TOP;}
   }
-
-  // ── first page header ─────────────────────────────────────────────
   drawPageHeader(pageNum);
-
-  // ── render each staff member ──────────────────────────────────────
-  staffList.forEach((name,si)=>{
-    const staffEntries=weekEntries.filter(e=>e.staff_name===name);
-
-    // Staff name banner
+  staffList.forEach(name=>{
     ensureSpace(24);
-    doc.setFillColor(...NAVY);
-    doc.rect(marginL,cy,contentW,20,'F');
+    doc.setFillColor(...NAVY);doc.rect(marginL,cy,contentW,20,'F');
     doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(...WHITE);
-    doc.text(name.toUpperCase(),marginL+8,cy+13);
-    cy+=20;
-
-    // For each day that has entries (or show all days)
+    doc.text(name.toUpperCase(),marginL+8,cy+13);cy+=20;
     days.forEach((d,di)=>{
       const dayEntries=weekEntries.filter(e=>e.staff_name===name&&e.day_index===di);
-
-      // Day sub-header
       ensureSpace(18);
       const isWknd=di>=5;
       doc.setFillColor(...(isWknd?[230,230,240]:LG));
       doc.rect(marginL,cy,contentW,16,'F');
       doc.setDrawColor(...MG);doc.rect(marginL,cy,contentW,16,'S');
-      doc.setFontSize(8);doc.setFont('helvetica','bold');
-      doc.setTextColor(...(isWknd?[120,120,160]:NAVY));
+      doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...(isWknd?[120,120,160]:NAVY));
       doc.text(`${DAY_NAMES[di].toUpperCase()}  ${fmtDate(d)}`,marginL+6,cy+11);
-      const entryCount=dayEntries.length;
-      doc.setFont('helvetica','normal');doc.setFontSize(7);
-      doc.setTextColor(...GREY);
-      doc.text(`${entryCount} task${entryCount!==1?'s':''}`,PW-marginR-4,cy+11,{align:'right'});
+      doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(...GREY);
+      doc.text(`${dayEntries.length} task${dayEntries.length!==1?'s':''}`,PW-marginR-4,cy+11,{align:'right'});
       cy+=16;
-
       if(!dayEntries.length){
-        // Empty day — just a short placeholder row
         ensureSpace(14);
         doc.setFillColor(...WHITE);doc.rect(marginL,cy,contentW,12,'F');
         doc.setDrawColor(...MG);doc.rect(marginL,cy,contentW,12,'S');
         doc.setFontSize(7);doc.setFont('helvetica','italic');doc.setTextColor(...GREY);
-        doc.text('No tasks',marginL+8,cy+8);
-        cy+=12;
+        doc.text('No tasks',marginL+8,cy+8);cy+=12;
       } else {
-        dayEntries.forEach((e,ei)=>{
+        dayEntries.forEach(e=>{
           const wj=wipJobs.find(j=>j.id===e.job_id);
           const isDone=e.completed;
-
-          // Build full title
-          let title='';
-          if(wj){
-            title=`${wj.customer||''}${wj.nature_of_job?': '+wj.nature_of_job:''}`.trim();
-          } else {
-            title=e.custom_task||'Task';
-          }
-
-          // Build detail lines
+          const title=wj?`${wj.customer||''}${wj.nature_of_job?': '+wj.nature_of_job:''}`.trim():e.custom_task||'Task';
           const details=[];
           if(wj){
-            if(wj.job_number) details.push(`Job #: ${wj.job_number}`);
-            if(wj.quote_number) details.push(`Quote: ${wj.quote_number}`);
-            if(wj.sales_order) details.push(`SO: ${wj.sales_order}`);
-            if(wj.invoice) details.push(`Invoice: ${wj.invoice}`);
-            if(wj.delivery_date) details.push(`Delivery: ${fmtDate(wj.delivery_date)}`);
-            if(wj.status) details.push(`Status: ${wj.status}`);
-            if(wj.total_amount) details.push(`Total: R${(wj.total_amount||0).toLocaleString()}`);
-            if(wj.staff_notes) details.push(`Job notes: ${wj.staff_notes}`);
+            if(wj.job_number)details.push(`Job #: ${wj.job_number}`);
+            if(wj.quote_number)details.push(`Quote: ${wj.quote_number}`);
+            if(wj.sales_order)details.push(`SO: ${wj.sales_order}`);
+            if(wj.invoice)details.push(`Invoice: ${wj.invoice}`);
+            if(wj.delivery_date)details.push(`Delivery: ${fmtDate(wj.delivery_date)}`);
+            if(wj.status)details.push(`Status: ${wj.status}`);
+            if(wj.total_amount)details.push(`Total: R${(wj.total_amount||0).toLocaleString()}`);
+            if(wj.staff_notes)details.push(`Job notes: ${wj.staff_notes}`);
           }
-          if(e.notes) details.push(`Task notes: ${e.notes}`);
-
-          // Measure height needed
-          const titleLines=doc.setFontSize(8)||doc.splitTextToSize(title,contentW-24);
+          if(e.notes)details.push(`Task notes: ${e.notes}`);
           doc.setFontSize(8);
           const tLines=doc.splitTextToSize(title,contentW-24);
-          const dLineArr=details.map(dt=>{doc.setFontSize(7);return doc.splitTextToSize(dt,contentW-28);});
-          const totalLines=tLines.length+dLineArr.reduce((s,l)=>s+l.length,0);
+          doc.setFontSize(7);
+          const dLineArr=details.map(dt=>doc.splitTextToSize(dt,contentW-28));
           const entryH=Math.max(20,8+tLines.length*10+dLineArr.reduce((s,l)=>s+l.length*9,0)+6);
-
           ensureSpace(entryH);
-
-          // Entry background
           doc.setFillColor(...(isDone?GREEN_BG:BLUE_BG));
           doc.roundedRect(marginL,cy,contentW,entryH-2,2,2,'F');
           doc.setDrawColor(...(isDone?GREEN_FG:BLUE_FG));
           doc.roundedRect(marginL,cy,contentW,entryH-2,2,2,'S');
-
-          // Status dot
           doc.setFillColor(...(isDone?GREEN_FG:BLUE_FG));
           doc.circle(marginL+8,cy+10,3,'F');
-
-          // Title
           let ey=cy+11;
-          doc.setFontSize(8);doc.setFont('helvetica','bold');
-          doc.setTextColor(...(isDone?GREEN_FG:NAVY));
+          doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...(isDone?GREEN_FG:NAVY));
           tLines.forEach(line=>{doc.text(line,marginL+16,ey);ey+=10;});
-
-          // Detail lines
-          if(details.length){
-            dLineArr.forEach(lines=>{
-              doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...GREY);
-              lines.forEach(line=>{doc.text(line,marginL+16,ey);ey+=9;});
-            });
-          }
-
-          // Done badge
-          if(isDone){
-            doc.setFillColor(...GREEN_FG);
-            doc.roundedRect(PW-marginR-34,cy+4,30,10,2,2,'F');
-            doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(...WHITE);
-            doc.text('DONE',PW-marginR-19,cy+11,{align:'center'});
-          }
-
+          if(details.length){dLineArr.forEach(lines=>{doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...GREY);lines.forEach(line=>{doc.text(line,marginL+16,ey);ey+=9;});});}
+          if(isDone){doc.setFillColor(...GREEN_FG);doc.roundedRect(PW-marginR-34,cy+4,30,10,2,2,'F');doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(...WHITE);doc.text('DONE',PW-marginR-19,cy+11,{align:'center'});}
           cy+=entryH;
         });
       }
-
-      cy+=4; // gap between days
+      cy+=4;
     });
-
-    cy+=10; // gap between staff members
+    cy+=10;
   });
-
-  // ── footer on last page ───────────────────────────────────────────
   drawPageFooter();
   return doc;
 }
@@ -2454,6 +2393,146 @@ async function saveModal(){
 
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');document.getElementById('modal-save-btn').style.cssText='';}
 function closeMO(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
+// ═══════════════════════════════════════════════════════════════
+// DRAG & DROP — ORDER PERSISTENCE
+// ═══════════════════════════════════════════════════════════════
+
+function orderKey(){ return 'bos_order_'+(currentUser?.id||'x'); }
+
+function loadSavedOrders(){
+  try{
+    const raw=localStorage.getItem(orderKey());
+    if(!raw)return;
+    const saved=JSON.parse(raw);
+    // WIP order — reorder wipJobs within each status group
+    if(saved.wip){
+      wipOrder=saved.wip;
+      const allStatuses=['Jobs On The Go','Awaiting Approval','Job Complete'];
+      allStatuses.forEach(st=>{
+        const ids=wipOrder[st];
+        if(!ids||!ids.length)return;
+        const group=wipJobs.filter(j=>j.status===st);
+        const ordered=[];
+        ids.forEach(id=>{ const j=group.find(x=>String(x.id)===String(id)); if(j)ordered.push(j); });
+        // append any jobs not in saved order (newly added)
+        group.forEach(j=>{ if(!ordered.find(x=>x.id===j.id))ordered.push(j); });
+        // replace in wipJobs array
+        let gi=0;
+        wipJobs.forEach((j,i)=>{ if(j.status===st){ wipJobs[i]=ordered[gi++]; } });
+      });
+    }
+    // Planner order — reorder teamMembers
+    if(saved.planner&&saved.planner.length){
+      plannerOrder=saved.planner;
+      const ordered=[];
+      plannerOrder.forEach(name=>{ const m=teamMembers.find(x=>x.name===name); if(m)ordered.push(m); });
+      teamMembers.forEach(m=>{ if(!ordered.find(x=>x.id===m.id))ordered.push(m); });
+      teamMembers.length=0;
+      ordered.forEach(m=>teamMembers.push(m));
+    }
+  }catch(e){}
+}
+
+function saveOrders(){
+  try{
+    const allStatuses=['Jobs On The Go','Awaiting Approval','Job Complete'];
+    const wip={};
+    allStatuses.forEach(st=>{
+      wip[st]=wipJobs.filter(j=>j.status===st).map(j=>String(j.id));
+    });
+    const planner=teamMembers.map(m=>m.name);
+    localStorage.setItem(orderKey(),JSON.stringify({wip,planner}));
+  }catch(e){}
+}
+
+// ── WIP drag ─────────────────────────────────────────────────────
+function initWIPDrag(){
+  let dragSrc=null;
+  document.querySelectorAll('#wip-content tr[draggable]').forEach(row=>{
+    row.addEventListener('dragstart',e=>{
+      dragSrc=row;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+    });
+    row.addEventListener('dragend',()=>{
+      row.classList.remove('dragging');
+      document.querySelectorAll('#wip-content tr.drag-over').forEach(r=>r.classList.remove('drag-over'));
+      dragSrc=null;
+    });
+    row.addEventListener('dragover',e=>{
+      e.preventDefault();
+      if(!dragSrc||dragSrc===row)return;
+      // only allow reorder within same status
+      if(dragSrc.dataset.status!==row.dataset.status)return;
+      e.dataTransfer.dropEffect='move';
+      document.querySelectorAll('#wip-content tr.drag-over').forEach(r=>r.classList.remove('drag-over'));
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave',()=>row.classList.remove('drag-over'));
+    row.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(!dragSrc||dragSrc===row)return;
+      if(dragSrc.dataset.status!==row.dataset.status)return;
+      row.classList.remove('drag-over');
+      const st=row.dataset.status;
+      // Reorder wipJobs array
+      const srcId=String(dragSrc.dataset.id);
+      const tgtId=String(row.dataset.id);
+      const srcIdx=wipJobs.findIndex(j=>String(j.id)===srcId);
+      const tgtIdx=wipJobs.findIndex(j=>String(j.id)===tgtId);
+      if(srcIdx<0||tgtIdx<0)return;
+      const [moved]=wipJobs.splice(srcIdx,1);
+      const newTgt=wipJobs.findIndex(j=>String(j.id)===tgtId);
+      // insert before or after based on relative position
+      const insertAt=srcIdx>tgtIdx?newTgt:newTgt+1;
+      wipJobs.splice(insertAt,0,moved);
+      saveOrders();
+      renderWIP();
+    });
+  });
+}
+
+// ── Planner drag ──────────────────────────────────────────────────
+function initPlannerDrag(){
+  let dragSrc=null;
+  document.querySelectorAll('#planner-content tr[draggable]').forEach(row=>{
+    row.addEventListener('dragstart',e=>{
+      dragSrc=row;
+      row.classList.add('planner-dragging');
+      e.dataTransfer.effectAllowed='move';
+    });
+    row.addEventListener('dragend',()=>{
+      row.classList.remove('planner-dragging');
+      document.querySelectorAll('#planner-content tr.planner-drag-over').forEach(r=>r.classList.remove('planner-drag-over'));
+      dragSrc=null;
+    });
+    row.addEventListener('dragover',e=>{
+      e.preventDefault();
+      if(!dragSrc||dragSrc===row)return;
+      e.dataTransfer.dropEffect='move';
+      document.querySelectorAll('#planner-content tr.planner-drag-over').forEach(r=>r.classList.remove('planner-drag-over'));
+      row.classList.add('planner-drag-over');
+    });
+    row.addEventListener('dragleave',()=>row.classList.remove('planner-drag-over'));
+    row.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(!dragSrc||dragSrc===row)return;
+      row.classList.remove('planner-drag-over');
+      const srcName=dragSrc.dataset.member;
+      const tgtName=row.dataset.member;
+      const srcIdx=teamMembers.findIndex(m=>m.name===srcName);
+      const tgtIdx=teamMembers.findIndex(m=>m.name===tgtName);
+      if(srcIdx<0||tgtIdx<0)return;
+      const [moved]=teamMembers.splice(srcIdx,1);
+      const newTgt=teamMembers.findIndex(m=>m.name===tgtName);
+      const insertAt=srcIdx>tgtIdx?newTgt:newTgt+1;
+      teamMembers.splice(insertAt,0,moved);
+      saveOrders();
+      renderPlanner();
+    });
+  });
+}
+
 </script>
 </body>
 </html>
