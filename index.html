@@ -1636,17 +1636,14 @@ function renderWIP(){
 
   const filtered=wipJobs.filter(j=>{
     if(statusFilter&&j.status!==statusFilter)return false;
-    if(search){
-      const allText=[(j.job_number||''),(j.customer||''),(j.nature_of_job||''),(j.quote_number||''),(j.sales_order||''),(j.invoice||''),(j.delivery_date||''),(j.expected_payment_date||''),(j.staff_notes||''),(j.total_amount||'').toString(),(j.deposit_amount||'').toString()].join(' ').toLowerCase();
-      if(!allText.includes(search))return false;
-    }
+    if(search){const allText=[(j.job_number||''),(j.customer||''),(j.nature_of_job||''),(j.quote_number||''),(j.sales_order||''),(j.invoice||''),(j.delivery_date||''),(j.expected_payment_date||''),(j.staff_notes||''),(j.total_amount||'').toString(),(j.deposit_amount||'').toString()].join(' ').toLowerCase();if(!allText.includes(search))return false;}
     if(wfJobnum&&!(j.job_number||'').toLowerCase().includes(wfJobnum))return false;
     if(wfCustomer&&!(j.customer||'').toLowerCase().includes(wfCustomer))return false;
     if(wfNature&&!(j.nature_of_job||'').toLowerCase().includes(wfNature))return false;
     if(wfQuote&&!(j.quote_number||'').toLowerCase().includes(wfQuote))return false;
     if(wfSO&&!(j.sales_order||'').toLowerCase().includes(wfSO))return false;
     if(wfInvoice&&!(j.invoice||'').toLowerCase().includes(wfInvoice))return false;
-    if(wfDeliveryFrom&&(j.delivery_date||'')< wfDeliveryFrom)return false;
+    if(wfDeliveryFrom&&(j.delivery_date||'')<wfDeliveryFrom)return false;
     if(wfDeliveryTo&&(j.delivery_date||'')>wfDeliveryTo)return false;
     if(wfDepPaid==='yes'&&!j.deposit_paid)return false;
     if(wfDepPaid==='no'&&j.deposit_paid)return false;
@@ -1654,10 +1651,7 @@ function renderWIP(){
     if(wfPaidFull==='no'&&j.paid_full)return false;
     if(wfTotalMin!==null&&(j.total_amount||0)<wfTotalMin)return false;
     if(wfTotalMax!==null&&(j.total_amount||0)>wfTotalMax)return false;
-    if(wfNotes){
-      const staffNames=(j.wip_staff_tasks||[]).map(t=>t.staff_name||'').join(' ').toLowerCase();
-      if(!(j.staff_notes||'').toLowerCase().includes(wfNotes)&&!staffNames.includes(wfNotes))return false;
-    }
+    if(wfNotes){const staffNames=(j.wip_staff_tasks||[]).map(t=>t.staff_name||'').join(' ').toLowerCase();if(!(j.staff_notes||'').toLowerCase().includes(wfNotes)&&!staffNames.includes(wfNotes))return false;}
     return true;
   });
 
@@ -1860,7 +1854,7 @@ function removePlannerTaskRow(i){plannerTaskRows.splice(i,1);renderPlannerTaskRo
 function renderPlannerTaskRows(){
   const c=document.getElementById('planner-task-container');if(!c)return;
   if(!plannerTaskRows.length){c.innerHTML=`<div style="font-size:12px;color:var(--text-tertiary);font-style:italic;padding:4px 0">No tasks added yet</div>`;return;}
-  const wipOpts=wipJobs.filter(j=>j.status!=='Job Complete').map(j=>`<option value="${j.id}">${j.customer||'?'}: ${(j.nature_of_job||'').slice(0,40)}</option>`).join('');
+  const wipOpts=wipJobs.map(j=>`<option value="${j.id}">[${j.status==='Job Complete'?'Complete':j.status==='Awaiting Approval'?'Awaiting':'Active'}] ${j.customer||'?'}: ${(j.nature_of_job||'').slice(0,40)}</option>`).join('');
   c.innerHTML=plannerTaskRows.map((r,i)=>`
     <div style="background:var(--bg-secondary);border:0.5px solid var(--border-light);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -2141,7 +2135,7 @@ function openModal(mode,extra){
     const e=plannerEntries.find(x=>x.id===extra);
     const wj=wipJobs.find(j=>j.id===e?.job_id);
     title.textContent=`Edit task — ${e?.staff_name} — ${DAY_NAMES[e?.day_index||0]}`;
-    const wipOpts=wipJobs.filter(j=>j.status!=='Job Complete').map(j=>`<option value="${j.id}"${j.id===e?.job_id?' selected':''}>${j.customer||'?'}: ${(j.nature_of_job||'').slice(0,40)}</option>`).join('');
+    const wipOpts=wipJobs.map(j=>`<option value="${j.id}"${j.id===e?.job_id?' selected':''}>[${j.status==='Job Complete'?'Complete':j.status==='Awaiting Approval'?'Awaiting':'Active'}] ${j.customer||'?'}: ${(j.nature_of_job||'').slice(0,40)}</option>`).join('');
     const isCustom=!e?.job_id;
     body.innerHTML=`
       <div class="form-row"><label>Type</label>
