@@ -1825,7 +1825,7 @@ function renderPlanner(){
         const wj=wipJobs.find(j=>j.id===e.job_id);
         const title=wj?`${wj.customer||'Job'} — ${wj.nature_of_job||''}`:e.custom_task||'Task';
         const sub=e.notes||'';
-        h+=`<div class="planner-entry${e.completed?' done':''}" draggable="true" data-entry-id="${e.id}" data-staff="${m.name}" data-day="${di}" data-ws="${ws}" onclick="openModal('plannerEdit','${e.id}')">
+        h+=`<div class="planner-entry${e.completed?' done':''}" draggable="true" data-entry-id="${e.id}" data-staff="${m.name}" data-day="${di}" data-ws="${ws}" onclick="if(_plannerDragJustEnded)return;openModal('plannerEdit','${e.id}')">
           <span class="drag-handle" style="position:absolute;left:25px;top:6px;font-size:11px" onclick="event.stopPropagation()" title="Drag to move"><i class="ti ti-grip-vertical"></i></span>
           <input type="checkbox" class="planner-entry-chk" ${e.completed?'checked':''} onclick="event.stopPropagation();togglePlannerEntry('${e.id}',this.checked)" title="${e.completed?'Mark pending':'Mark complete'}">
           <div class="planner-entry-title" style="padding-left:14px" title="${title.replace(/"/g,'&quot;')}">${title.length>38?title.slice(0,36)+'…':title}</div>
@@ -2450,19 +2450,78 @@ function renderDealDocSection(dealId){
   </div>`;
 }
 
+// Global flag: suppress click events fired immediately after a drag ends
+let _plannerDragJustEnded=false;
+
 function initPlannerDrag(){
   let src=null;
+
   document.querySelectorAll('#planner-content .planner-entry[draggable]').forEach(entry=>{
-    entry.addEventListener('dragstart',e=>{src=entry;entry.classList.add('task-dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','task');});
-    entry.addEventListener('dragend',()=>{if(src)src.classList.remove('task-dragging');document.querySelectorAll('#planner-content .task-drag-over,.cell-drag-over').forEach(el=>el.classList.remove('task-drag-over','cell-drag-over'));src=null;});
-    entry.addEventListener('dragover',e=>{e.stopPropagation();if(!src||src===entry)return;e.preventDefault();document.querySelectorAll('#planner-content .task-drag-over').forEach(el=>el.classList.remove('task-drag-over'));entry.classList.add('task-drag-over');});
-    entry.addEventListener('dragleave',e=>{if(!e.relatedTarget||!entry.contains(e.relatedTarget))entry.classList.remove('task-drag-over');});
-    entry.addEventListener('drop',e=>{e.stopPropagation();if(!src||src===entry)return;e.preventDefault();entry.classList.remove('task-drag-over');moveTask(src,{beforeEntry:entry});});
+
+    entry.addEventListener('dragstart',e=>{
+      src=entry;
+      _plannerDragJustEnded=false;
+      entry.classList.add('task-dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain','task');
+    });
+
+    entry.addEventListener('dragend',()=>{
+      if(src)src.classList.remove('task-dragging');
+      document.querySelectorAll('#planner-content .task-drag-over,.cell-drag-over')
+        .forEach(el=>el.classList.remove('task-drag-over','cell-drag-over'));
+      // Suppress the spurious click that browsers fire after dragend
+      _plannerDragJustEnded=true;
+      setTimeout(()=>{ _plannerDragJustEnded=false; },300);
+      src=null;
+    });
+
+    // Block click if it fires right after a drag (browser quirk)
+    entry.addEventListener('click',e=>{
+      if(_plannerDragJustEnded){ e.stopImmediatePropagation(); e.preventDefault(); }
+    },true);
+
+    entry.addEventListener('dragover',e=>{
+      e.stopPropagation();
+      if(!src||src===entry)return;
+      e.preventDefault();
+      document.querySelectorAll('#planner-content .task-drag-over')
+        .forEach(el=>el.classList.remove('task-drag-over'));
+      entry.classList.add('task-drag-over');
+    });
+
+    entry.addEventListener('dragleave',e=>{
+      if(!e.relatedTarget||!entry.contains(e.relatedTarget))
+        entry.classList.remove('task-drag-over');
+    });
+
+    entry.addEventListener('drop',e=>{
+      e.stopPropagation();
+      e.preventDefault();
+      if(!src||src===entry)return;
+      entry.classList.remove('task-drag-over');
+      moveTask(src,{beforeEntry:entry});
+    });
   });
+
   document.querySelectorAll('#planner-content td.planner-day-cell').forEach(cell=>{
-    cell.addEventListener('dragover',e=>{if(!src)return;e.preventDefault();e.stopPropagation();cell.classList.add('cell-drag-over');});
-    cell.addEventListener('dragleave',e=>{if(!e.relatedTarget||!cell.contains(e.relatedTarget))cell.classList.remove('cell-drag-over');});
-    cell.addEventListener('drop',e=>{if(!src)return;e.preventDefault();e.stopPropagation();cell.classList.remove('cell-drag-over');moveTask(src,{cell});});
+    cell.addEventListener('dragover',e=>{
+      if(!src)return;
+      e.preventDefault();
+      e.stopPropagation();
+      cell.classList.add('cell-drag-over');
+    });
+    cell.addEventListener('dragleave',e=>{
+      if(!e.relatedTarget||!cell.contains(e.relatedTarget))
+        cell.classList.remove('cell-drag-over');
+    });
+    cell.addEventListener('drop',e=>{
+      if(!src)return;
+      e.preventDefault();
+      e.stopPropagation();
+      cell.classList.remove('cell-drag-over');
+      moveTask(src,{cell});
+    });
   });
 }
 
