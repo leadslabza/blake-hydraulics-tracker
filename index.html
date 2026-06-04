@@ -214,7 +214,7 @@ tr:hover td{background:var(--bg-secondary)}
 .drag-handle:active{cursor:grabbing}
 .planner-entry.task-dragging{opacity:.3;outline:1.5px dashed var(--accent)}
 .planner-entry.task-drag-over{box-shadow:0 -2px 0 var(--accent),0 0 0 1.5px var(--accent)}
-.planner-day-cell.cell-drag-over{background:color-mix(in srgb,var(--accent) 8%,transparent)!important;outline:1.5px dashed var(--accent)}
+.planner-day-cell.cell-drag-over{background:var(--info-bg)!important;outline:1.5px dashed var(--accent)}
 .planner-table{width:100%;border-collapse:collapse;min-width:700px}
 .planner-table th,.planner-table td{border:0.5px solid var(--border-light);padding:0;vertical-align:top}
 .planner-table thead th{background:var(--bg-secondary);padding:10px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);white-space:nowrap;text-align:center}
@@ -504,17 +504,16 @@ async function dbDelete(table,id){const{error}=await sb.from(table).delete().eq(
 async function dbUpsertForecast(rn,mk,data){const{error}=await sb.from('forecasts').upsert({rep_name:rn,month_key:mk,...data},{onConflict:'rep_name,month_key'});if(error)throw error;}
 
 // ── QUOTE STORAGE ───────────────────────────────────────────────
-async function uploadQuoteToDB(dealId,file){
-  // 1. Upload file to Supabase Storage
-  const filePath=`${dealId}/${Date.now()}_${file.name}`;
+async function uploadQuoteToDB(dealId,file,docType='quote'){
+  const filePath=`${dealId}/${docType}/${Date.now()}_${file.name}`;
   const{error:upErr}=await sb.storage.from(STORAGE_BUCKET).upload(filePath,file,{contentType:'application/pdf',upsert:false});
   if(upErr)throw upErr;
-  // 2. Get public URL
   const{data:{publicUrl}}=sb.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
-  // 3. Save metadata to quotes table
-  const row=await dbInsert('quotes',{deal_id:dealId,file_name:file.name,file_path:filePath,public_url:publicUrl,uploaded_by:currentUser.name,uploaded_at:today()});
+  const row=await dbInsert('quotes',{deal_id:dealId,file_name:file.name,file_path:filePath,public_url:publicUrl,uploaded_by:currentUser.name,uploaded_at:today(),doc_type:docType});
   return row;
 }
+
+const quotesOfType=(dealId,typ)=>quotes.filter(q=>q.deal_id===dealId&&(q.doc_type||'quote')===typ);
 
 async function deleteQuoteFromDB(quoteId,filePath){
   await sb.storage.from(STORAGE_BUCKET).remove([filePath]);
@@ -687,7 +686,10 @@ function renderDeals(){
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div class="section-hd" style="margin-bottom:0">Quotes (${qs.length})</div>
           ${isAdmin()?`<label style="cursor:pointer" title="Upload PDF quote" onclick="event.stopPropagation()">
-            <div class="btn success" style="font-size:12px;padding:4px 10px"><i class="ti ti-upload"></i> Upload PDF</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <label style="cursor:pointer" onclick="event.stopPropagation()"><input type="file" accept="application/pdf" style="display:none" onchange="handleDealUpload(event,'${d.id}','quote')"><div class="btn success" style="font-size:12px;padding:4px 10px"><i class="ti ti-upload"></i> Quote PDF</div></label>
+            <label style="cursor:pointer" onclick="event.stopPropagation()"><input type="file" accept="application/pdf" style="display:none" onchange="handleDealUpload(event,'${d.id}','costing')"><div class="btn" style="font-size:12px;padding:4px 10px"><i class="ti ti-upload"></i> Costing sheet</div></label>
+          </div>
             <input type="file" accept=".pdf,application/pdf" style="display:none" onchange="handleUpload(event,'${d.id}')">
           </label>`:''}
         </div>
@@ -713,28 +715,52 @@ function renderDeals(){
   document.getElementById('deals-content').innerHTML=h;
 }
 
-async function handleUpload(event,dealId){
+// Generic PDF upload handler used from deal cards and edit modal
+async function handleDealUpload(event,dealId,docType='quote'){
   const file=event.target.files[0];event.target.value='';
-  if(!file){return;}
+  if(!file)return;
   if(file.type!=='application/pdf'&&!file.name.toLowerCase().endsWith('.pdf')){toast('Please select a PDF file','err');return;}
   if(file.size>15*1024*1024){toast('File must be under 15MB','err');return;}
-  const prog=document.getElementById(`prog-${dealId}`);
-  const fill=document.getElementById(`prog-fill-${dealId}`);
-  if(prog){prog.style.display='block';fill.style.width='10%';}
-  let tick=10;const interval=setInterval(()=>{tick=Math.min(tick+10,85);if(fill)fill.style.width=tick+'%';},200);
+  showLoading(`Uploading ${docType==='costing'?'costing sheet':'quote'}…`);
   try{
-    const row=await uploadQuoteToDB(dealId,file);
-    clearInterval(interval);if(fill)fill.style.width='100%';
+    const row=await uploadQuoteToDB(dealId,file,docType);
     quotes.push(row);
     toast(`"${file.name}" uploaded`);
-    setTimeout(()=>{if(prog)prog.style.display='none';renderDeals();},400);
-  }catch(e){clearInterval(interval);if(prog)prog.style.display='none';toast('Upload failed: '+e.message,'err');console.error(e);}
+    renderDeals();
+  }catch(e){toast('Upload failed: '+e.message,'err');console.error(e);}
+  hideLoading();
 }
 
+// Upload from inside the viewDeal modal (refreshes modal)
+async function handleViewDealUpload(event,dealId,docType='quote'){
+  const file=event.target.files[0];event.target.value='';
+  if(!file)return;
+  if(file.type!=='application/pdf'&&!file.name.toLowerCase().endsWith('.pdf')){toast('Please select a PDF file','err');return;}
+  if(file.size>15*1024*1024){toast('File must be under 15MB','err');return;}
+  showLoading(`Uploading ${docType==='costing'?'costing sheet':'quote'}…`);
+  try{
+    const row=await uploadQuoteToDB(dealId,file,docType);
+    quotes.push(row);
+    toast(`"${file.name}" uploaded`);
+    openModal('viewDeal',String(dealId)); // refresh modal
+  }catch(e){toast('Upload failed: '+e.message,'err');console.error(e);}
+  hideLoading();
+}
+
+// Legacy alias used from old inline onchange handlers (keep for safety)
+async function handleUpload(event,dealId){return handleDealUpload(event,dealId,'quote');}
+
 async function removeQuote(quoteId,filePath){
-  if(!confirm('Remove this quote? This cannot be undone.'))return;
+  if(!confirm('Remove this file? This cannot be undone.'))return;
   showLoading('Removing…');
-  try{await deleteQuoteFromDB(quoteId,filePath);quotes=quotes.filter(q=>q.id!==quoteId);toast('Quote removed');renderDeals();}
+  try{
+    await deleteQuoteFromDB(quoteId,filePath);
+    quotes=quotes.filter(q=>q.id!==quoteId);
+    toast('File removed');
+    // Refresh whichever view is open
+    if(modalMode==='viewDeal')openModal('viewDeal',String(targetId));
+    else renderDeals();
+  }
   catch(e){toast('Remove failed','err');console.error(e);}
   hideLoading();
 }
@@ -1271,7 +1297,7 @@ function renderPipeline(){
   if(isRep())f=f.filter(d=>d.rep===currentUser.name);
   const tb=document.getElementById('pipe-body');const admin=isAdmin();
   if(!f.length){tb.innerHTML=`<tr><td colspan="12"><div class="empty">No deals found</div></td></tr>`;}
-  else tb.innerHTML=f.map(d=>{const qs=quotesForDeal(d.id);return`<tr class="row-link" onclick="openModal('viewDeal','${d.id}')"><td>${d.rep}</td><td>${d.customer}</td><td>${d.company}</td><td title="${d.opportunity}">${d.opportunity}</td><td><span class="badge ${SC[d.stage]||'b-gray'}">${d.stage}</span></td><td style="text-align:right">${fmt(d.value)}</td><td style="text-align:center">${d.prob}%</td><td style="text-align:right">${fmt(Math.round(d.value*d.prob/100))}</td><td>${fmtDate(d.close)||'—'}</td><td><span class="badge ${d.status==='Won'?'b-green':d.status==='Lost'?'b-coral':'b-blue'}">${d.status}</span></td><td style="text-align:center">${qs.length?`<span class="badge b-green" style="cursor:pointer" onclick="event.stopPropagation();switchTab('deals')" title="View in Deals tab">${qs.length} PDF${qs.length!==1?'s':''}</span>`:`<span style="font-size:11px;color:var(--text-tertiary)">None</span>`}</td><td style="overflow:visible"><button class="icon-btn del" onclick="event.stopPropagation();openModal('deleteDeal','${d.id}')" ${admin?'':'disabled'} title="${admin?'Delete deal':'Admin only'}"><i class="ti ti-trash"></i></button></td></tr>`;}).join('');
+  else tb.innerHTML=f.map(d=>{const qs=quotesForDeal(d.id);return`<tr class="row-link" onclick="openModal('viewDeal','${d.id}')"><td>${d.rep}</td><td>${d.customer}</td><td>${d.company}</td><td title="${d.opportunity}">${d.opportunity}</td><td><span class="badge ${SC[d.stage]||'b-gray'}">${d.stage}</span></td><td style="text-align:right">${fmt(d.value)}</td><td style="text-align:center">${d.prob}%</td><td style="text-align:right">${fmt(Math.round(d.value*d.prob/100))}</td><td>${fmtDate(d.close)||'—'}</td><td><span class="badge ${d.status==='Won'?'b-green':d.status==='Lost'?'b-coral':'b-blue'}">${d.status}</span></td><td style="text-align:center">${qs.length?`<span class="badge b-green" style="cursor:pointer" onclick="event.stopPropagation();switchTab('deals')" title="View in Deals tab">${qs.length} PDF${qs.length!==1?'s':''}</span>`:`<span style="font-size:11px;color:var(--text-tertiary)">None</span>`}</td><td style="overflow:visible;white-space:nowrap"><div style="display:flex;gap:4px"><button class="icon-btn" onclick="event.stopPropagation();openModal('editDeal','${d.id}')" title="Edit deal"><i class="ti ti-pencil"></i></button><button class="icon-btn del" onclick="event.stopPropagation();openModal('deleteDeal','${d.id}')" ${admin?'':'disabled'} title="${admin?'Delete deal':'Admin only'}"><i class="ti ti-trash"></i></button></div></td></tr>`;}).join('');
   document.getElementById('pipe-total').textContent=fmt(f.reduce((s,d)=>s+d.value,0));
   document.getElementById('pipe-weighted').textContent=fmt(Math.round(f.reduce((s,d)=>s+d.value*d.prob/100,0)));
   document.getElementById('pipe-count').textContent=f.length;
@@ -1400,17 +1426,15 @@ function renderCashflow(){
       h+=`<div class="section-hd" style="margin:20px 0 10px;display:flex;align-items:center;gap:8px"><span style="color:var(--warn-text)"><i class="ti ti-alert-triangle"></i> Overdue — Job Complete, unpaid</span><span class="badge b-amber">${fmt(overdueAmt)}</span></div>
       <div class="tbl-wrap"><table><colgroup><col style="width:55px"><col style="width:92px"><col style="width:120px"><col style="width:160px"><col style="width:68px"><col style="width:75px"><col style="width:90px"><col style="width:100px"><col style="width:90px"></colgroup>
       <thead><tr><th>Job #</th><th>Due date</th><th>Customer</th><th>Nature of job</th><th>Invoice</th><th>Quote</th><th>Type</th><th>Amount (R)</th><th>Days overdue</th></tr></thead><tbody>`;
-      overdueEvents.forEach(e=>{const do2=Math.max(0,Math.ceil((new Date(todayStr)-new Date(e.date))/86400000));h+=`<tr class="cf-overdue"><td>${e.job_number}</td><td>${fmtDate(e.date)} <span class="badge b-coral" style="font-size:10px;padding:1px 5px">Overdue</span></td><td>${e.customer}</td><td>${e.nature}</td><td>${e.invoice}</td><td>${e.quote}</td><td><span class="badge ${e.type==='Deposit'?'b-teal':'b-blue'}">${e.type}</span></td><td style="text-align:right;font-weight:600;color:var(--warn-text)">${fmt(e.amount)}</td><td style="text-align:center;color:var(--warn-text);font-weight:600">${do2>0?do2+'d':'Today'}</td></tr>`;});
+      overdueEvents.forEach(e=>{const dO=Math.max(0,Math.ceil((new Date(todayStr)-new Date(e.date))/86400000));h+=`<tr class="cf-overdue"><td>${e.job_number}</td><td>${fmtDate(e.date)} <span class="badge b-coral" style="font-size:10px;padding:1px 5px">Overdue</span></td><td>${e.customer}</td><td>${e.nature}</td><td>${e.invoice}</td><td>${e.quote}</td><td><span class="badge ${e.type==='Deposit'?'b-teal':'b-blue'}">${e.type}</span></td><td style="text-align:right;font-weight:600;color:var(--warn-text)">${fmt(e.amount)}</td><td style="text-align:center;color:var(--warn-text);font-weight:600">${dO>0?dO+'d':'Today'}</td></tr>`;});
       h+=`</tbody></table></div><div class="pipe-footer" style="margin-top:6px;margin-bottom:20px"><span>Overdue: <strong>${overdueEvents.length}</strong></span><span style="color:var(--warn-text)">Total: <strong>${fmt(overdueAmt)}</strong></span></div>`;
     }
     h+=`<div class="section-hd" style="margin:20px 0 10px">Upcoming payment schedule</div>`;
     if(!upcomingEvents.length){h+=`<div class="empty" style="padding:1rem">No upcoming payments in this date range</div>`;}
-    else{
-      h+=`<div class="tbl-wrap"><table><colgroup><col style="width:55px"><col style="width:92px"><col style="width:120px"><col style="width:160px"><col style="width:68px"><col style="width:75px"><col style="width:90px"><col style="width:100px"><col style="width:90px"></colgroup>
+    else{h+=`<div class="tbl-wrap"><table><colgroup><col style="width:55px"><col style="width:92px"><col style="width:120px"><col style="width:160px"><col style="width:68px"><col style="width:75px"><col style="width:90px"><col style="width:100px"><col style="width:90px"></colgroup>
       <thead><tr><th>Job #</th><th>Due date</th><th>Customer</th><th>Nature of job</th><th>Invoice</th><th>Quote</th><th>Type</th><th>Amount (R)</th><th>Job status</th></tr></thead><tbody>`;
       upcomingEvents.forEach(e=>{h+=`<tr class="${e.overdue?'cf-overdue':''}"><td>${e.job_number}</td><td>${fmtDate(e.date)}${e.overdue?` <span class="badge b-amber" style="font-size:10px;padding:1px 5px">Overdue</span>`:''}</td><td>${e.customer}</td><td>${e.nature}</td><td>${e.invoice}</td><td>${e.quote}</td><td><span class="badge ${e.type==='Deposit'?'b-teal':'b-blue'}">${e.type}</span></td><td style="text-align:right;font-weight:500">${fmt(e.amount)}</td><td><span class="badge ${'Jobs On The Go'===e.status?'b-blue':'Awaiting Approval'===e.status?'b-amber':'b-green'}">${e.status}</span></td></tr>`;});
-      h+=`</tbody></table></div><div class="pipe-footer" style="margin-top:10px"><span>Payments: <strong>${upcomingEvents.length}</strong></span><span>Total: <strong>${fmt(upcomingEvents.reduce((s,e)=>s+e.amount,0))}</strong></span></div>`;
-    }
+      h+=`</tbody></table></div><div class="pipe-footer" style="margin-top:10px"><span>Payments: <strong>${upcomingEvents.length}</strong></span><span>Total: <strong>${fmt(upcomingEvents.reduce((s,e)=>s+e.amount,0))}</strong></span></div>`;}
   }
 
   document.getElementById('cashflow-content').innerHTML=h;
@@ -1714,13 +1738,9 @@ async function markWIPComplete(id){
   catch(e){alert('Failed: '+e.message);}
 }
 function toggleWIPFilters(){
-  const panel=document.getElementById('wip-filters');
-  const btn=document.getElementById('wip-filter-toggle');
-  const clearBtn=document.getElementById('wip-filter-clear');
+  const panel=document.getElementById('wip-filters');const btn=document.getElementById('wip-filter-toggle');const clearBtn=document.getElementById('wip-filter-clear');
   const open=panel.style.display==='none'||!panel.style.display;
-  panel.style.display=open?'block':'none';
-  btn.classList.toggle('active',open);
-  clearBtn.style.display=open?'':'none';
+  panel.style.display=open?'block':'none';btn.classList.toggle('active',open);clearBtn.style.display=open?'':'none';
 }
 function clearWIPFilters(){
   ['wf-jobnum','wf-customer','wf-nature','wf-quote','wf-so','wf-invoice','wf-delivery-from','wf-delivery-to','wf-notes','wf-total-min','wf-total-max'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -1800,13 +1820,13 @@ function renderPlanner(){
       const cellEntries=weekEntries.filter(e=>e.staff_name===m.name&&e.day_index===di);
       const isTodayCol=d===todayStr;
       const isWknd=di>=5;
-      h+=`<td class="planner-day-cell" data-staff="${m.name}" data-day="${di}" data-ws="${ws}"${isTodayCol?' style="background:var(--info-bg)"':isWknd?' style="background:var(--bg-tertiary)"':''}>`;
+      h+=`<td class="planner-day-cell"${isTodayCol?' style="background:var(--info-bg)"':isWknd?' style="background:var(--bg-tertiary)"':''}>`;
       cellEntries.forEach(e=>{
         const wj=wipJobs.find(j=>j.id===e.job_id);
         const title=wj?`${wj.customer||'Job'} — ${wj.nature_of_job||''}`:e.custom_task||'Task';
         const sub=e.notes||'';
-        h+=`<div class="planner-entry${e.completed?' done':''}" draggable="true" data-entry-id="${e.id}" data-staff="${m.name}" data-day="${di}" data-ws="${ws}" onclick="openModal('plannerEdit','${e.id}')">
-          <span class="drag-handle" style="position:absolute;left:25px;top:6px;font-size:11px" onclick="event.stopPropagation()" title="Drag to reorder or move to another day"><i class="ti ti-grip-vertical"></i></span>
+        h+=`<div class="planner-entry${e.completed?' done':''}" draggable="true" data-entry-id="${e.id}" data-staff="${m.name}" data-day="${di}" data-ws="${ws}" onclick="if(_plannerDragJustEnded)return;openModal('plannerEdit','${e.id}')">
+          <span class="drag-handle" style="position:absolute;left:25px;top:6px;font-size:11px" onclick="event.stopPropagation()" title="Drag to move"><i class="ti ti-grip-vertical"></i></span>
           <input type="checkbox" class="planner-entry-chk" ${e.completed?'checked':''} onclick="event.stopPropagation();togglePlannerEntry('${e.id}',this.checked)" title="${e.completed?'Mark pending':'Mark complete'}">
           <div class="planner-entry-title" style="padding-left:14px" title="${title.replace(/"/g,'&quot;')}">${title.length>38?title.slice(0,36)+'…':title}</div>
           ${sub?`<div class="planner-entry-sub">${sub.length>40?sub.slice(0,38)+'…':sub}</div>`:''}
@@ -2007,7 +2027,7 @@ function downloadPlannerPDF(){
 function openModal(mode,extra){
   modalMode=mode;targetId=extra||null;
   const title=document.getElementById('modal-title'),body=document.getElementById('modal-body'),saveBtn=document.getElementById('modal-save-btn');
-  saveBtn.style.cssText='';saveBtn.className='btn primary';saveBtn.textContent='Save';
+  saveBtn.style.cssText='';saveBtn.className='btn primary';saveBtn.textContent='Save';saveBtn.onclick=null;
 
   if(mode==='newUser'){
     const roleLabels={'admin':'Add admin','rep':'Add rep','team':'Add team member'};
@@ -2041,7 +2061,9 @@ function openModal(mode,extra){
       <div class="form-2"><div class="form-row"><label>Deal value (R)</label><input type="number" id="f-value" value="${d.value||''}" min="0"></div>
       <div class="form-row"><label>Probability %</label><input type="number" id="f-prob" value="${d.prob!==undefined?d.prob:DP['Qualified']}" min="0" max="100"></div></div>
       <div class="form-2"><div class="form-row"><label>Expected close date</label><input type="date" id="f-close" value="${d.close||''}"></div>
-      <div class="form-row"><label>Status</label><select id="f-status"><option${(d.status||'Active')==='Active'?' selected':''}>Active</option><option${d.status==='Won'?' selected':''}>Won</option><option${d.status==='Lost'?' selected':''}>Lost</option></select></div></div>`;
+      <div class="form-row"><label>Status</label><select id="f-status"><option${(d.status||'Active')==='Active'?' selected':''}>Active</option><option${d.status==='Won'?' selected':''}>Won</option><option${d.status==='Lost'?' selected':''}>Lost</option></select></div></div>
+      `;
+    if(mode==='editDeal')body.innerHTML+=renderDealDocSection(extra);
   } else if(mode==='deleteDeal'){
     const d=deals.find(x=>String(x.id)===String(extra));title.textContent='Delete deal';
     saveBtn.className='btn danger';saveBtn.textContent='Yes, delete';
@@ -2179,7 +2201,8 @@ function openModal(mode,extra){
   } else if(mode==='viewDeal'){
     const d=deals.find(x=>String(x.id)===String(extra));
     const qs=quotesForDeal(d.id);
-    title.textContent='Deal details';saveBtn.style.display='none';
+    title.textContent='Deal details';
+    saveBtn.textContent='Edit deal';saveBtn.onclick=()=>{closeModal();openModal('editDeal',String(d.id));};saveBtn.className='btn primary';
     body.innerHTML=`<div class="detail-grid">
       <span class="detail-label">Customer</span><span>${d.customer||'—'}</span>
       <span class="detail-label">Company</span><span>${d.company||'—'}</span>
@@ -2194,8 +2217,15 @@ function openModal(mode,extra){
       <span class="detail-label">Status</span><span><span class="badge ${d.status==='Won'?'b-green':d.status==='Lost'?'b-coral':'b-blue'}">${d.status}</span></span>
       <span class="detail-label">Close date</span><span>${fmtDate(d.close)||'—'}</span>
       <div class="detail-sep"></div>
-      <span class="detail-label">Quotes</span><span>${qs.length?qs.map(q=>`<a href="${q.public_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:var(--accent);text-decoration:none;font-size:12px;margin-bottom:4px"><i class="ti ti-file-type-pdf" style="color:#C0392B"></i>${q.file_name}</a>`).join('<br>'):'No quotes uploaded'}</span>
-    </div>`;
+      <span class="detail-label">Quotes</span><span>${quotesOfType(d.id,'quote').length?quotesOfType(d.id,'quote').map(q=>`<a href="${q.public_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:var(--accent);text-decoration:none;font-size:12px;margin-bottom:4px"><i class="ti ti-file-type-pdf" style="color:#C0392B"></i>${q.file_name}</a>`).join('<br>'):'No quotes uploaded'}</span>
+      <div class="detail-sep"></div>
+      <span class="detail-label">Job costing</span><span>${quotesOfType(d.id,'costing').length?quotesOfType(d.id,'costing').map(q=>`<a href="${q.public_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:var(--accent);text-decoration:none;font-size:12px;margin-bottom:4px"><i class="ti ti-file-type-pdf" style="color:#C0392B"></i>${q.file_name}</a>`).join('<br>'):'No costing sheets uploaded'}</span>
+    </div>
+    ${isAdmin()?`<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <label style="cursor:pointer"><input type="file" accept="application/pdf" style="display:none" onchange="handleViewDealUpload(event,'${d.id}','quote')"><div class="btn" style="font-size:12px"><i class="ti ti-upload"></i> Upload quote PDF</div></label>
+      <label style="cursor:pointer"><input type="file" accept="application/pdf" style="display:none" onchange="handleViewDealUpload(event,'${d.id}','costing')"><div class="btn" style="font-size:12px"><i class="ti ti-upload"></i> Upload costing sheet</div></label>
+      ${[...quotesOfType(d.id,'quote'),...quotesOfType(d.id,'costing')].map(q=>`<button class="icon-btn del" onclick="removeQuote(${q.id},'${q.file_path}')" title="Remove: ${q.file_name}"><i class="ti ti-trash"></i></button>`).join('')}
+    </div>`:''}`;
   } else if(mode==='viewWIP'){
     const j=wipJobs.find(x=>x.id===extra);
     const tasks=j.wip_staff_tasks||[];
@@ -2397,46 +2427,83 @@ async function saveModal(){
 
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');document.getElementById('modal-save-btn').style.cssText='';}
 function closeMO(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
-// ═══════════════════════════════════════════════════════════════════
-// PLANNER DRAG & DROP  — same-cell reorder + cross-day/cross-member
-// ═══════════════════════════════════════════════════════════════════
-function initPlannerDrag(){
-  let src=null; // the dragged .planner-entry element
+// Render the document upload section shown inside the editDeal modal
+function renderDealDocSection(dealId){
+  const qDocs=quotesOfType(dealId,'quote');
+  const cDocs=quotesOfType(dealId,'costing');
+  const allDocs=[...qDocs,...cDocs];
+  return `<div style="margin-top:16px;padding-top:14px;border-top:0.5px solid var(--border-light)">
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);margin-bottom:10px">Documents</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <label style="cursor:pointer"><input type="file" accept="application/pdf" style="display:none" onchange="handleViewDealUpload(event,'${dealId}','quote')"><div class="btn success" style="font-size:12px;padding:5px 12px"><i class="ti ti-upload"></i> Upload quote PDF</div></label>
+      <label style="cursor:pointer"><input type="file" accept="application/pdf" style="display:none" onchange="handleViewDealUpload(event,'${dealId}','costing')"><div class="btn" style="font-size:12px;padding:5px 12px"><i class="ti ti-upload"></i> Upload costing sheet</div></label>
+    </div>
+    ${allDocs.length?`<div style="display:flex;flex-direction:column;gap:4px">
+      ${allDocs.map(q=>`<div class="quote-item">
+        <i class="ti ti-file-type-pdf" style="color:${(q.doc_type||'quote')==='costing'?'#7C3AED':'#C0392B'};flex-shrink:0"></i>
+        <span style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text-tertiary);margin-right:4px">${(q.doc_type||'quote')==='costing'?'Costing':'Quote'}</span>
+        <a class="quote-item-name" href="${q.public_url}" target="_blank">${q.file_name}</a>
+        <span class="quote-item-date">${fmtDate(q.uploaded_at)}</span>
+        <button class="icon-btn del" onclick="removeQuote(${q.id},'${q.file_path}')" title="Remove"><i class="ti ti-trash"></i></button>
+      </div>`).join('')}
+    </div>`:'<div style="font-size:12px;color:var(--text-tertiary);font-style:italic">No documents uploaded yet</div>'}
+  </div>`;
+}
 
-  // ── entry drag ──────────────────────────────────────────────────
+// Global flag: suppress click events fired immediately after a drag ends
+let _plannerDragJustEnded=false;
+
+function initPlannerDrag(){
+  let src=null;
+
   document.querySelectorAll('#planner-content .planner-entry[draggable]').forEach(entry=>{
+
     entry.addEventListener('dragstart',e=>{
       src=entry;
+      _plannerDragJustEnded=false;
       entry.classList.add('task-dragging');
       e.dataTransfer.effectAllowed='move';
       e.dataTransfer.setData('text/plain','task');
     });
+
     entry.addEventListener('dragend',()=>{
       if(src)src.classList.remove('task-dragging');
-      document.querySelectorAll('#planner-content .task-drag-over').forEach(el=>el.classList.remove('task-drag-over'));
-      document.querySelectorAll('#planner-content .cell-drag-over').forEach(el=>el.classList.remove('cell-drag-over'));
+      document.querySelectorAll('#planner-content .task-drag-over,.cell-drag-over')
+        .forEach(el=>el.classList.remove('task-drag-over','cell-drag-over'));
+      // Suppress the spurious click that browsers fire after dragend
+      _plannerDragJustEnded=true;
+      setTimeout(()=>{ _plannerDragJustEnded=false; },300);
       src=null;
     });
+
+    // Block click if it fires right after a drag (browser quirk)
+    entry.addEventListener('click',e=>{
+      if(_plannerDragJustEnded){ e.stopImmediatePropagation(); e.preventDefault(); }
+    },true);
+
     entry.addEventListener('dragover',e=>{
       e.stopPropagation();
       if(!src||src===entry)return;
       e.preventDefault();
-      document.querySelectorAll('#planner-content .task-drag-over').forEach(el=>el.classList.remove('task-drag-over'));
+      document.querySelectorAll('#planner-content .task-drag-over')
+        .forEach(el=>el.classList.remove('task-drag-over'));
       entry.classList.add('task-drag-over');
     });
+
     entry.addEventListener('dragleave',e=>{
-      if(!e.relatedTarget||!entry.contains(e.relatedTarget))entry.classList.remove('task-drag-over');
+      if(!e.relatedTarget||!entry.contains(e.relatedTarget))
+        entry.classList.remove('task-drag-over');
     });
+
     entry.addEventListener('drop',e=>{
       e.stopPropagation();
-      if(!src||src===entry)return;
       e.preventDefault();
+      if(!src||src===entry)return;
       entry.classList.remove('task-drag-over');
-      moveTask(src, {beforeEntry:entry});
+      moveTask(src,{beforeEntry:entry});
     });
   });
 
-  // ── cell drop zone (drop into empty space or end of list) ──────
   document.querySelectorAll('#planner-content td.planner-day-cell').forEach(cell=>{
     cell.addEventListener('dragover',e=>{
       if(!src)return;
@@ -2445,91 +2512,100 @@ function initPlannerDrag(){
       cell.classList.add('cell-drag-over');
     });
     cell.addEventListener('dragleave',e=>{
-      if(!e.relatedTarget||!cell.contains(e.relatedTarget))cell.classList.remove('cell-drag-over');
+      if(!e.relatedTarget||!cell.contains(e.relatedTarget))
+        cell.classList.remove('cell-drag-over');
     });
     cell.addEventListener('drop',e=>{
       if(!src)return;
       e.preventDefault();
       e.stopPropagation();
       cell.classList.remove('cell-drag-over');
-      moveTask(src, {cell});
+      moveTask(src,{cell});
     });
   });
 }
 
-async function moveTask(srcEl, {beforeEntry, cell}){
+async function moveTask(srcEl,{beforeEntry,cell}){
   const entryId=String(srcEl.dataset.entryId);
-  const srcStaff=srcEl.dataset.staff;
-  const srcDay=parseInt(srcEl.dataset.day);
-  const srcWs=srcEl.dataset.ws;
+  const srcStaff=srcEl.dataset.staff,srcDay=parseInt(srcEl.dataset.day),srcWs=srcEl.dataset.ws;
+  let tgtStaff,tgtDay,tgtWs;
+  if(beforeEntry){tgtStaff=beforeEntry.dataset.staff;tgtDay=parseInt(beforeEntry.dataset.day);tgtWs=beforeEntry.dataset.ws;}
+  else{tgtStaff=cell.dataset.staff;tgtDay=parseInt(cell.dataset.day);tgtWs=cell.dataset.ws;}
 
-  // Determine target staff + day from the drop target
-  let tgtStaff, tgtDay, tgtWs;
-  if(beforeEntry){
-    tgtStaff=beforeEntry.dataset.staff;
-    tgtDay=parseInt(beforeEntry.dataset.day);
-    tgtWs=beforeEntry.dataset.ws;
-  } else {
-    tgtStaff=cell.dataset.staff;
-    tgtDay=parseInt(cell.dataset.day);
-    tgtWs=cell.dataset.ws;
-  }
-
-  // Find the entry in local state
+  // Find entry object (do NOT mutate yet)
   const eIdx=plannerEntries.findIndex(e=>String(e.id)===entryId);
   if(eIdx<0)return;
   const entry=plannerEntries[eIdx];
+  const movingDay=tgtDay!==srcDay,movingMember=tgtStaff!==srcStaff;
 
-  const movingDay = tgtDay!==srcDay;
-  const movingMember = tgtStaff!==srcStaff;
+  // ── Snapshot groups BEFORE any mutation ──────────────────────────
+  // Source group without the moved entry
+  const srcGroup=plannerEntries.filter(e=>
+    e.staff_name===srcStaff && e.day_index===srcDay && e.week_start===srcWs &&
+    String(e.id)!==entryId
+  );
 
-  // ── Update local state ──────────────────────────────────────────
-  // Remove from source group
-  const srcGroup=plannerEntries.filter(e=>e.staff_name===srcStaff&&e.day_index===srcDay&&e.week_start===srcWs);
-  const srcGroupIdx=srcGroup.findIndex(e=>String(e.id)===entryId);
-  srcGroup.splice(srcGroupIdx,1);
+  // Target group without the moved entry (handles same-cell reorder)
+  const tgtGroup=plannerEntries.filter(e=>
+    e.staff_name===tgtStaff && e.day_index===tgtDay && e.week_start===tgtWs &&
+    String(e.id)!==entryId
+  );
 
-  // Mutate the entry's day/staff
+  // Everything else (different staff+day+week combinations)
+  const isSrcCell=e=>e.staff_name===srcStaff&&e.day_index===srcDay&&e.week_start===srcWs;
+  const isTgtCell=e=>e.staff_name===tgtStaff&&e.day_index===tgtDay&&e.week_start===tgtWs;
+  const others=plannerEntries.filter(e=>!isSrcCell(e)&&!isTgtCell(e));
+
+  // ── Now mutate the entry's position ──────────────────────────────
   entry.day_index=tgtDay;
   entry.staff_name=tgtStaff;
   entry.week_start=tgtWs;
 
-  // Insert into target group
-  const tgtGroup=plannerEntries.filter(e=>e.staff_name===tgtStaff&&e.day_index===tgtDay&&e.week_start===tgtWs&&String(e.id)!==entryId);
+  // Insert entry into target group at correct position
   if(beforeEntry){
     const tgtId=String(beforeEntry.dataset.entryId);
-    const tgtIdx=tgtGroup.findIndex(e=>String(e.id)===tgtId);
-    tgtGroup.splice(tgtIdx>=0?tgtIdx:tgtGroup.length,0,entry);
+    const insertIdx=tgtGroup.findIndex(e=>String(e.id)===tgtId);
+    tgtGroup.splice(insertIdx>=0?insertIdx:tgtGroup.length,0,entry);
   } else {
     tgtGroup.push(entry);
   }
 
-  // Write updated groups back into plannerEntries
-  // Replace the full plannerEntries array preserving other weeks/members
-  const others=plannerEntries.filter(e=>
-    !(e.staff_name===srcStaff&&e.day_index===srcDay&&e.week_start===srcWs) &&
-    !(e.staff_name===tgtStaff&&e.day_index===tgtDay&&e.week_start===tgtWs)
-  );
-  // Re-add src group (without moved entry) and tgt group (with moved entry)
-  const newSrcGroup=plannerEntries.filter(e=>e.staff_name===srcStaff&&e.day_index===srcDay&&e.week_start===srcWs&&String(e.id)!==entryId);
+  // ── Rebuild plannerEntries ────────────────────────────────────────
+  // If src and tgt are same cell, srcGroup already excludes the entry and
+  // tgtGroup already has it inserted — just combine without duplicating srcGroup
+  const sameCel=srcStaff===tgtStaff&&srcDay===tgtDay&&srcWs===tgtWs;
   plannerEntries.length=0;
-  [...others,...newSrcGroup,...tgtGroup].forEach(e=>plannerEntries.push(e));
-
-  renderPlanner();
-
-  // ── Persist to DB if day or member changed ──────────────────────
-  if(movingDay||movingMember){
-    try{
-      await dbUpdate('team_planner',entryId,{
-        day_index:tgtDay,
-        staff_name:tgtStaff,
-        week_start:tgtWs,
-      });
-    }catch(err){
-      console.error('Failed to persist task move:',err);
-    }
+  if(sameCel){
+    [...others,...tgtGroup].forEach(e=>plannerEntries.push(e));
+  } else {
+    [...others,...srcGroup,...tgtGroup].forEach(e=>plannerEntries.push(e));
   }
+
+  // Defer re-render until after the full drag sequence completes.
+  // Re-rendering inside the drop handler tears down the DOM node before
+  // dragend fires, causing a spurious click on the freshly rendered node.
+  const _movingDay=movingDay,_movingMember=movingMember,_entryId=entryId;
+  const _tgtDay=tgtDay,_tgtStaff=tgtStaff,_tgtWs=tgtWs;
+  const _srcDay=srcDay,_srcStaff=srcStaff,_srcWs=srcWs;
+  setTimeout(async ()=>{
+    renderPlanner();
+    if(_movingDay||_movingMember){
+      try{
+        await dbUpdate('team_planner',_entryId,{day_index:_tgtDay,staff_name:_tgtStaff,week_start:_tgtWs});
+      }catch(err){
+        // Show the actual DB error
+        const msg=err?.message||err?.error_description||JSON.stringify(err)||'Unknown error';
+        toast('Move failed — '+msg,'err');
+        console.error('team_planner update failed:',err);
+        // Roll back the local entry to its original position
+        const rollbackEntry=plannerEntries.find(e=>String(e.id)===_entryId);
+        if(rollbackEntry){rollbackEntry.day_index=_srcDay;rollbackEntry.staff_name=_srcStaff;rollbackEntry.week_start=_srcWs;}
+        renderPlanner();
+      }
+    }
+  },0);
 }
+
 
 </script>
 </body>
