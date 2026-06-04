@@ -2472,23 +2472,66 @@ async function moveTask(srcEl,{beforeEntry,cell}){
   let tgtStaff,tgtDay,tgtWs;
   if(beforeEntry){tgtStaff=beforeEntry.dataset.staff;tgtDay=parseInt(beforeEntry.dataset.day);tgtWs=beforeEntry.dataset.ws;}
   else{tgtStaff=cell.dataset.staff;tgtDay=parseInt(cell.dataset.day);tgtWs=cell.dataset.ws;}
+
+  // Find entry object (do NOT mutate yet)
   const eIdx=plannerEntries.findIndex(e=>String(e.id)===entryId);
   if(eIdx<0)return;
   const entry=plannerEntries[eIdx];
   const movingDay=tgtDay!==srcDay,movingMember=tgtStaff!==srcStaff;
-  const srcGroup=plannerEntries.filter(e=>e.staff_name===srcStaff&&e.day_index===srcDay&&e.week_start===srcWs);
-  srcGroup.splice(srcGroup.findIndex(e=>String(e.id)===entryId),1);
-  entry.day_index=tgtDay;entry.staff_name=tgtStaff;entry.week_start=tgtWs;
-  const tgtGroup=plannerEntries.filter(e=>e.staff_name===tgtStaff&&e.day_index===tgtDay&&e.week_start===tgtWs&&String(e.id)!==entryId);
-  if(beforeEntry){const ti=tgtGroup.findIndex(e=>String(e.id)===String(beforeEntry.dataset.entryId));tgtGroup.splice(ti>=0?ti:tgtGroup.length,0,entry);}
-  else{tgtGroup.push(entry);}
-  const others=plannerEntries.filter(e=>!(e.staff_name===srcStaff&&e.day_index===srcDay&&e.week_start===srcWs)&&!(e.staff_name===tgtStaff&&e.day_index===tgtDay&&e.week_start===tgtWs));
-  const newSrc=plannerEntries.filter(e=>e.staff_name===srcStaff&&e.day_index===srcDay&&e.week_start===srcWs&&String(e.id)!==entryId);
-  plannerEntries.length=0;[...others,...newSrc,...tgtGroup].forEach(e=>plannerEntries.push(e));
+
+  // ── Snapshot groups BEFORE any mutation ──────────────────────────
+  // Source group without the moved entry
+  const srcGroup=plannerEntries.filter(e=>
+    e.staff_name===srcStaff && e.day_index===srcDay && e.week_start===srcWs &&
+    String(e.id)!==entryId
+  );
+
+  // Target group without the moved entry (handles same-cell reorder)
+  const tgtGroup=plannerEntries.filter(e=>
+    e.staff_name===tgtStaff && e.day_index===tgtDay && e.week_start===tgtWs &&
+    String(e.id)!==entryId
+  );
+
+  // Everything else (different staff+day+week combinations)
+  const isSrcCell=e=>e.staff_name===srcStaff&&e.day_index===srcDay&&e.week_start===srcWs;
+  const isTgtCell=e=>e.staff_name===tgtStaff&&e.day_index===tgtDay&&e.week_start===tgtWs;
+  const others=plannerEntries.filter(e=>!isSrcCell(e)&&!isTgtCell(e));
+
+  // ── Now mutate the entry's position ──────────────────────────────
+  entry.day_index=tgtDay;
+  entry.staff_name=tgtStaff;
+  entry.week_start=tgtWs;
+
+  // Insert entry into target group at correct position
+  if(beforeEntry){
+    const tgtId=String(beforeEntry.dataset.entryId);
+    const insertIdx=tgtGroup.findIndex(e=>String(e.id)===tgtId);
+    tgtGroup.splice(insertIdx>=0?insertIdx:tgtGroup.length,0,entry);
+  } else {
+    tgtGroup.push(entry);
+  }
+
+  // ── Rebuild plannerEntries ────────────────────────────────────────
+  // If src and tgt are same cell, srcGroup already excludes the entry and
+  // tgtGroup already has it inserted — just combine without duplicating srcGroup
+  const sameCel=srcStaff===tgtStaff&&srcDay===tgtDay&&srcWs===tgtWs;
+  plannerEntries.length=0;
+  if(sameCel){
+    [...others,...tgtGroup].forEach(e=>plannerEntries.push(e));
+  } else {
+    [...others,...srcGroup,...tgtGroup].forEach(e=>plannerEntries.push(e));
+  }
+
   renderPlanner();
+
+  // ── Persist to DB only if position actually changed ───────────────
   if(movingDay||movingMember){
     try{await dbUpdate('team_planner',entryId,{day_index:tgtDay,staff_name:tgtStaff,week_start:tgtWs});}
-    catch(err){console.error('Failed to persist task move:',err);}
+    catch(err){
+      console.error('Failed to persist task move:',err);
+      // Reload from DB to restore consistent state
+      await loadAllData();renderPlanner();
+    }
   }
 }
 
