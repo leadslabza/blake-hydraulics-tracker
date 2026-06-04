@@ -235,6 +235,14 @@ tr:hover td{background:var(--bg-secondary)}
 .planner-add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--info-bg)}
 .planner-day-today th,.planner-day-today td{background:var(--info-bg)!important}
 .week-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+
+/* WIP drag/drop */
+.wip-drop-zone{min-height:70px}
+.wip-drop-zone.wip-drag-over{outline:2px dashed var(--accent);outline-offset:3px;border-radius:var(--radius-md)}
+.wip-drag-row{cursor:grab}
+.wip-drag-row:active{cursor:grabbing}
+.wip-drag-row.wip-dragging{opacity:.45}
+.wip-drag-row.wip-row-drag-over{box-shadow:inset 0 2px 0 var(--accent)}
 </style>
 </head>
 <body>
@@ -425,6 +433,34 @@ let wipStaffRows=[];
 let plannerEntries=[], plannerWeekStart=null, teamMembers=[], plannerTaskRows=[];
 let plannerMemberFilter='';
 let performanceTimesheets=[];
+const BOS_SESSION_KEY='bos_current_user_v1';
+let wipDraggedJobId=null;
+
+function sanitiseUserForSession(user){
+  if(!user)return null;
+  const {password, ...safeUser}=user;
+  return safeUser;
+}
+
+function saveCurrentUserSession(user){
+  try{localStorage.setItem(BOS_SESSION_KEY,JSON.stringify(sanitiseUserForSession(user)));}
+  catch(e){console.warn('Could not save B.O.S session',e);}
+}
+
+function clearCurrentUserSession(){
+  try{localStorage.removeItem(BOS_SESSION_KEY);}
+  catch(e){console.warn('Could not clear B.O.S session',e);}
+}
+
+function getSavedUserSession(){
+  try{
+    const raw=localStorage.getItem(BOS_SESSION_KEY);
+    return raw?JSON.parse(raw):null;
+  }catch(e){
+    clearCurrentUserSession();
+    return null;
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -523,6 +559,35 @@ async function deleteQuoteFromDB(quoteId,filePath){
 // ═══════════════════════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════════════════════
+function applyLoggedInUI(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('topbar-name').textContent=currentUser.name||currentUser.username||'';
+  const rb=document.getElementById('topbar-role');
+  rb.className='role-pill '+rolePillClass(currentUser.role);
+  rb.innerHTML=`<i class="ti ti-${currentUser.role==='super_admin'?'shield-check':currentUser.role==='admin'?'shield':currentUser.role==='team'?'users':'user'}"></i> ${roleLabel(currentUser.role)}`;
+  document.getElementById('tab-wip-btn').style.display=isAdmin()?'':'none';
+  document.getElementById('tab-cashflow-btn').style.display=isAdmin()?'':'none';
+  document.getElementById('tab-planner-btn').style.display=(isAdmin()||isRep())?'':'none';
+  document.getElementById('tab-perf-btn').style.display=isAdmin()?'':'none';
+  document.getElementById('tab-users-btn').style.display=isSuperAdmin()?'':'none';
+}
+
+async function restoreSavedSession(){
+  const saved=getSavedUserSession();
+  if(!saved)return;
+  currentUser=saved;
+  try{
+    applyLoggedInUI();
+    await loadAllData();
+    switchTab(isAdmin() ? 'wip' : 'dashboard');
+  }catch(e){
+    console.error('Saved session restore failed:',e);
+    clearCurrentUserSession();
+    doLogout(false);
+  }
+}
+
 async function doLogin(){
   const un=g('login-user').trim().toLowerCase(),pw=g('login-pass');
   if(!un||!pw){document.getElementById('login-error').textContent='Please enter username and password.';document.getElementById('login-error').style.display='block';return;}
@@ -531,24 +596,17 @@ async function doLogin(){
   try{
     const{data,error}=await sb.from('users').select('*').eq('username',un).eq('password',pw).maybeSingle();
     if(error||!data){document.getElementById('login-error').textContent='Incorrect username or password.';document.getElementById('login-error').style.display='block';return;}
-    currentUser=data;
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('main-app').style.display='block';
-    document.getElementById('topbar-name').textContent=currentUser.name;
-    const rb=document.getElementById('topbar-role');rb.className='role-pill '+rolePillClass(currentUser.role);
-    rb.innerHTML=`<i class="ti ti-${currentUser.role==='super_admin'?'shield-check':currentUser.role==='admin'?'shield':currentUser.role==='team'?'users':'user'}"></i> ${roleLabel(currentUser.role)}`;
-    document.getElementById('tab-wip-btn').style.display=isAdmin()?'':'none';
-    document.getElementById('tab-cashflow-btn').style.display=isAdmin()?'':'none';
-    document.getElementById('tab-planner-btn').style.display=isAdmin()?'':'none';
-    document.getElementById('tab-perf-btn').style.display=isAdmin()?'':'none';
-    document.getElementById('tab-users-btn').style.display=isSuperAdmin()?'':'none';
+    currentUser=sanitiseUserForSession(data);
+    saveCurrentUserSession(currentUser);
+    applyLoggedInUI();
     await loadAllData();
     switchTab(isAdmin() ? 'wip' : 'dashboard');
   }catch(e){document.getElementById('login-error').textContent='Login failed. Please try again.';document.getElementById('login-error').style.display='block';console.error(e);}
   finally{btn.disabled=false;btn.innerHTML='<i class="ti ti-login"></i> Sign in';}
 }
 
-function doLogout(){
+function doLogout(clearSession=true){
+  if(clearSession)clearCurrentUserSession();
   currentUser=null;users=[];activities=[];deals=[];quotes=[];forecasts={};wipJobs=[];wipStaffRows=[];plannerEntries=[];plannerWeekStart=null;teamMembers=[];plannerTaskRows=[];performanceTimesheets=[];
   document.getElementById('login-screen').style.display='block';
   document.getElementById('main-app').style.display='none';
@@ -1668,9 +1726,14 @@ function renderWIP(){
   const stColor={'Jobs On The Go':'b-blue','Awaiting Approval':'b-amber','Job Complete':'b-green'};
   let h='';
   statuses.forEach(st=>{
-    const jobs=filtered.filter(j=>j.status===st);
+    const jobs=filtered.filter(j=>j.status===st).sort((a,b)=>{
+      const ao=(a.wip_order??a.sort_order??999999);
+      const bo=(b.wip_order??b.sort_order??999999);
+      if(ao!==bo)return Number(ao)-Number(bo);
+      return String(a.created_at||a.id).localeCompare(String(b.created_at||b.id));
+    });
     const stTotal=jobs.reduce((s,j)=>s+(j.total_amount||0),0);
-    h+=`<div class="wip-section-wrap">
+    h+=`<div class="wip-section-wrap wip-drop-zone" data-wip-status="${st}" ondragover="wipDragOver(event)" ondragleave="wipDragLeave(event)" ondrop="wipDrop(event,'${st}')">
       <div class="wip-section-hd">
         <div class="wip-section-title"><span class="badge ${stColor[st]}">${st}</span> ${jobs.length} job${jobs.length!==1?'s':''}</div>
         <div style="font-size:12px;color:var(--text-secondary)">Total: <strong>${fmt(stTotal)}</strong></div>
@@ -1699,7 +1762,7 @@ function renderWIP(){
         const noteTxt=j.staff_notes?j.staff_notes.slice(0,24)+(j.staff_notes.length>24?'…':''):'';
         const taskBadge=tasks.length?`<span class="badge b-blue" style="margin-top:2px;display:inline-block">${tasks.length} task${tasks.length!==1?'s':''}</span>`:'';
         const noteTitle=j.staff_notes?` title="${j.staff_notes.replace(/"/g,'&quot;')}"`:''
-        h+=`<tr class="row-link" onclick="openModal('viewWIP','${j.id}')">
+        h+=`<tr class="row-link wip-drag-row" draggable="true" data-wip-id="${j.id}" data-wip-status="${j.status||st}" ondragstart="wipDragStart(event,'${j.id}')" ondragend="wipDragEnd(event)" ondragover="wipRowDragOver(event)" ondragleave="wipRowDragLeave(event)" ondrop="wipDrop(event,'${st}','${j.id}')" onclick="openModal('viewWIP','${j.id}')">
           <td style="white-space:nowrap;overflow:visible">
             <div style="display:flex;gap:4px">
               ${j.status==='Jobs On The Go'?`<button class="icon-btn" onclick="event.stopPropagation();markWIPComplete('${j.id}')" title="Mark as Job Complete" style="color:var(--success-text);border-color:var(--success-border)"><i class="ti ti-circle-check"></i></button>`:j.status==='Job Complete'?`<button class="icon-btn" disabled title="Already complete" style="color:var(--success-text);opacity:.4"><i class="ti ti-circle-check-filled"></i></button>`:''}
@@ -1728,6 +1791,87 @@ function renderWIP(){
     h+=`</div>`;
   });
   document.getElementById('wip-content').innerHTML=h;
+}
+
+
+function wipDragStart(e,id){
+  wipDraggedJobId=String(id);
+  e.stopPropagation();
+  if(e.dataTransfer){
+    e.dataTransfer.effectAllowed='move';
+    e.dataTransfer.setData('text/plain',wipDraggedJobId);
+  }
+  const row=e.currentTarget?.closest?.('.wip-drag-row');
+  if(row)row.classList.add('wip-dragging');
+}
+function wipDragEnd(e){
+  document.querySelectorAll('.wip-dragging,.wip-drag-over,.wip-row-drag-over').forEach(el=>el.classList.remove('wip-dragging','wip-drag-over','wip-row-drag-over'));
+  setTimeout(()=>{wipDraggedJobId=null;},0);
+}
+function wipDragOver(e){
+  if(!wipDraggedJobId)return;
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget?.classList?.add('wip-drag-over');
+  if(e.dataTransfer)e.dataTransfer.dropEffect='move';
+}
+function wipDragLeave(e){
+  if(!e.currentTarget?.contains(e.relatedTarget))e.currentTarget?.classList?.remove('wip-drag-over');
+}
+function wipRowDragOver(e){
+  if(!wipDraggedJobId)return;
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget?.classList?.add('wip-row-drag-over');
+  if(e.dataTransfer)e.dataTransfer.dropEffect='move';
+}
+function wipRowDragLeave(e){
+  e.currentTarget?.classList?.remove('wip-row-drag-over');
+}
+async function wipDrop(e,targetStatus,beforeId=''){
+  if(!wipDraggedJobId)return;
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.wip-drag-over,.wip-row-drag-over').forEach(el=>el.classList.remove('wip-drag-over','wip-row-drag-over'));
+  const draggedId=String(wipDraggedJobId);
+  if(beforeId && String(beforeId)===draggedId)return;
+  const job=wipJobs.find(j=>String(j.id)===draggedId);
+  if(!job){toast('WIP move failed — job not found.','err');return;}
+  const validStatuses=['Jobs On The Go','Awaiting Approval','Job Complete'];
+  if(!validStatuses.includes(targetStatus)){toast('WIP move failed — invalid status.','err');return;}
+
+  const oldStatus=job.status;
+  const previous=[...wipJobs];
+  job.status=targetStatus;
+
+  // Client-side reorder immediately so the UI responds even before Supabase confirms.
+  if(beforeId){
+    const draggedIndex=wipJobs.findIndex(j=>String(j.id)===draggedId);
+    const [dragged]=wipJobs.splice(draggedIndex,1);
+    const beforeIndex=wipJobs.findIndex(j=>String(j.id)===String(beforeId));
+    wipJobs.splice(beforeIndex>=0?beforeIndex:wipJobs.length,0,dragged);
+  }
+  renderWIP();
+
+  try{
+    await dbUpdate('wip_jobs',draggedId,{status:targetStatus});
+
+    // Optional persistent ordering: only attempt if the field exists in loaded rows.
+    const statusJobs=wipJobs.filter(j=>j.status===targetStatus);
+    const hasOrder=statusJobs.some(j=>Object.prototype.hasOwnProperty.call(j,'wip_order'));
+    if(hasOrder){
+      await Promise.all(statusJobs.map((j,i)=>dbUpdate('wip_jobs',j.id,{wip_order:i+1}).catch(err=>{
+        console.warn('WIP order save skipped/failed for job',j.id,err);
+      })));
+      statusJobs.forEach((j,i)=>j.wip_order=i+1);
+    }
+    if(oldStatus!==targetStatus)toast(`WIP job moved to ${targetStatus}`,'ok');
+  }catch(err){
+    wipJobs=previous;
+    renderWIP();
+    console.error('WIP drag/drop save failed',err);
+    toast('WIP move failed: '+(err.message||err),'err');
+  }
 }
 
 async function markWIPComplete(id){
@@ -1769,7 +1913,9 @@ function renderPlanner(){
   const ws=plannerWeekStart;
   const days=DAY_NAMES.map((_,i)=>addDays(ws,i));
   const todayStr=today();
-  const weekEntries=plannerEntries.filter(e=>e.week_start===ws);
+  const repPlannerOwnOnly=isRep();
+  const weekEntriesAll=plannerEntries.filter(e=>e.week_start===ws);
+  const weekEntries=repPlannerOwnOnly?weekEntriesAll.filter(e=>e.staff_name===currentUser.name):weekEntriesAll;
   const weekLabel=`${fmtDate(days[0])} – ${fmtDate(days[6])}`;
 
   let h=`<div class="week-nav">
@@ -1778,49 +1924,64 @@ function renderPlanner(){
     <button class="btn" onclick="plannerNextWeek()">Next <i class="ti ti-chevron-right"></i></button>
     <strong style="font-size:14px;margin-left:4px">${weekLabel}</strong>
     <div style="display:flex;gap:6px;align-items:center;margin-left:auto;flex-wrap:wrap">
-      <select id="planner-member-filter" style="height:34px;font-size:12px;min-width:150px" onchange="plannerMemberFilter=this.value;renderPlanner()">
-        <option value="">All members</option>
-        ${teamMembers.map(m=>`<option value="${m.name}"${plannerMemberFilter===m.name?' selected':''}>${m.name}</option>`).join('')}
-      </select>
-      <button class="btn success" onclick="downloadPlannerPDF()"><i class="ti ti-file-type-pdf"></i> PDF ${plannerMemberFilter?'— '+plannerMemberFilter:'All'}</button>
+      ${repPlannerOwnOnly
+        ? `<span class="pill info"><i class="ti ti-user-check"></i> My planner only</span>`
+        : `<select id="planner-member-filter" style="height:34px;font-size:12px;min-width:150px" onchange="plannerMemberFilter=this.value;renderPlanner()">
+            <option value="">All members</option>
+            ${teamMembers.map(m=>`<option value="${m.name}"${plannerMemberFilter===m.name?' selected':''}>${m.name}</option>`).join('')}
+          </select>`}
+      <button class="btn success" onclick="downloadPlannerPDF()"><i class="ti ti-file-type-pdf"></i> PDF ${repPlannerOwnOnly?'— My Planner':plannerMemberFilter?'— '+plannerMemberFilter:'All'}</button>
     </div>
   </div>`;
 
-  // Team member management bar
-  h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px 14px;background:var(--bg-secondary);border-radius:var(--radius-md);border:0.5px solid var(--border-light)">
-    <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary)">Team members</span>
-    ${teamMembers.map(m=>`<span style="display:inline-flex;align-items:center;gap:5px;background:var(--bg-primary);border:0.5px solid var(--border-mid);border-radius:99px;padding:3px 10px;font-size:12px">
-      ${m.name}
-      <button onclick="removeTeamMember('${m.id}')" style="border:none;background:none;cursor:pointer;color:var(--text-tertiary);display:inline-flex;align-items:center;padding:0;line-height:1" title="Remove"><i class="ti ti-x" style="font-size:11px"></i></button>
-    </span>`).join('')}
-    <div style="display:flex;gap:6px;align-items:center;margin-left:4px">
-      <select id="new-member-select" style="height:30px;font-size:12px;min-width:160px">
-        <option value="">Select user…</option>
-        ${users.map(u=>`<option value="${u.name}">${u.name} (${roleLabel(u.role)})</option>`).join('')}
-      </select>
-      <button class="btn primary" onclick="addTeamMember()" style="padding:4px 10px;font-size:12px;height:30px"><i class="ti ti-plus"></i> Add</button>
-    </div>
-  </div>`;
+  // Team member management bar — admins only. Reps get a read-only banner.
+  if(repPlannerOwnOnly){
+    h+=`<div class="info-banner"><i class="ti ti-info-circle" style="font-size:20px;flex-shrink:0"></i><div><div style="font-weight:500;margin-bottom:2px">My Team Planner</div><div>You can view and manage planner entries assigned to <strong>${currentUser.name}</strong>. Other team members are hidden from your view.</div></div></div>`;
+  } else {
+    h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding:12px 14px;background:var(--bg-secondary);border-radius:var(--radius-md);border:0.5px solid var(--border-light)">
+      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary)">Team members</span>
+      ${teamMembers.map(m=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-primary);border:0.5px solid var(--border-mid);border-radius:99px;padding:3px 8px 3px 10px;font-size:12px">
+        <span>${m.name}</span>
+        <button type="button" onclick="removeTeamMember('${m.id}')" class="icon-btn del" style="width:20px;height:20px;font-size:11px" title="Remove ${m.name} from planner"><i class="ti ti-trash"></i></button>
+      </span>`).join('')}
+      <div style="display:flex;gap:6px;align-items:center;margin-left:4px">
+        <select id="new-member-select" style="height:30px;font-size:12px;min-width:160px">
+          <option value="">Select user…</option>
+          ${users.map(u=>`<option value="${u.name}">${u.name} (${roleLabel(u.role)})</option>`).join('')}
+        </select>
+        <button class="btn primary" onclick="addTeamMember()" style="padding:4px 10px;font-size:12px;height:30px"><i class="ti ti-plus"></i> Add</button>
+      </div>
+    </div>`;
+  }
 
-  if(!teamMembers.length){
+  let visibleMembers;
+  if(repPlannerOwnOnly){
+    // A rep may not be in the team_members setup list yet, so create a virtual row
+    // if they have entries or simply need to view an empty personal planner.
+    const existingMember=teamMembers.find(m=>m.name===currentUser.name);
+    visibleMembers=[existingMember||{id:'current-rep',name:currentUser.name}];
+  } else {
+    visibleMembers=plannerMemberFilter?teamMembers.filter(m=>m.name===plannerMemberFilter):teamMembers;
+  }
+
+  if(!visibleMembers.length){
     h+=`<div class="empty"><i class="ti ti-users" style="font-size:32px;margin-bottom:8px;display:block;opacity:.3"></i>No team members yet.<br><span style="font-size:12px">Select a user above and click Add to get started.</span></div>`;
     document.getElementById('planner-content').innerHTML=h;
     return;
   }
 
   h+=`<div class="planner-wrap"><table class="planner-table"><thead><tr>
-    <th>Team Member</th>
+    <th>${repPlannerOwnOnly?'User':'Team Member'}</th>
     ${days.map((d,i)=>{const isWknd=i>=5;const isToday=d===todayStr;return`<th${isToday?' style="background:var(--info-bg);color:var(--info-text)"':isWknd?' style="background:var(--bg-tertiary);color:var(--text-tertiary)"':''}>${DAY_SHORT[i]}<br><span style="font-weight:400;font-size:10px">${fmtDate(d)}</span></th>`;}).join('')}
   </tr></thead><tbody>`;
 
-  const visibleMembers=plannerMemberFilter?teamMembers.filter(m=>m.name===plannerMemberFilter):teamMembers;
   visibleMembers.forEach(m=>{
-    h+=`<tr><td class="planner-staff-cell">${m.name}</td>`;
+    h+=`<tr><td class="planner-staff-cell"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span>${m.name}</span>${!repPlannerOwnOnly&&isAdmin()?`<button type="button" class="icon-btn del" onclick="event.stopPropagation();removeTeamMember('${m.id}')" title="Remove ${m.name} from planner"><i class="ti ti-trash"></i></button>`:''}</div></td>`;
     days.forEach((d,di)=>{
       const cellEntries=weekEntries.filter(e=>e.staff_name===m.name&&e.day_index===di);
       const isTodayCol=d===todayStr;
       const isWknd=di>=5;
-      h+=`<td class="planner-day-cell"${isTodayCol?' style="background:var(--info-bg)"':isWknd?' style="background:var(--bg-tertiary)"':''}>`;
+      h+=`<td class="planner-day-cell" data-staff="${m.name.replace(/"/g,'&quot;')}" data-day="${di}" data-ws="${ws}"${isTodayCol?' style="background:var(--info-bg)"':isWknd?' style="background:var(--bg-tertiary)"':''}>`;
       cellEntries.forEach(e=>{
         const wj=wipJobs.find(j=>j.id===e.job_id);
         const title=wj?`${wj.customer||'Job'} — ${wj.nature_of_job||''}`:e.custom_task||'Task';
@@ -1833,7 +1994,9 @@ function renderPlanner(){
           <button class="planner-entry-del" onclick="event.stopPropagation();deletePlannerEntry('${e.id}')" title="Remove"><i class="ti ti-x"></i></button>
         </div>`;
       });
-      h+=`<button class="planner-add-btn" onclick="openModal('plannerAdd','${m.name}|${di}|${ws}')"><i class="ti ti-plus"></i> Add</button>`;
+      if(isAdmin()||isRep()){
+        h+=`<button class="planner-add-btn" onclick="openModal('plannerAdd','${m.name}|${di}|${ws}')"><i class="ti ti-plus"></i> Add</button>`;
+      }
       h+=`</td>`;
     });
     h+=`</tr>`;
@@ -1845,6 +2008,7 @@ function renderPlanner(){
 }
 
 async function addTeamMember(){
+  if(!isAdmin()){toast('Only admin users can add team planner members','err');return;}
   const sel=document.getElementById('new-member-select');
   const name=(sel?.value||'').trim();
   if(!name){toast('Select a user first','err');return;}
@@ -1858,8 +2022,10 @@ async function addTeamMember(){
 }
 
 async function removeTeamMember(id){
+  if(!isAdmin()){toast('Only admin users can remove team planner members','err');return;}
   const m=teamMembers.find(x=>x.id===id);
-  if(!confirm(`Remove ${m?.name} from the team planner? Their scheduled entries will also be deleted.`))return;
+  if(!m){toast('Team member not found','err');return;}
+  if(!confirm(`Remove ${m.name} from the team planner? All scheduled entries for ${m.name} will also be deleted.`))return;
   try{
     // Remove all planner entries for this member
     const toDelete=plannerEntries.filter(e=>e.staff_name===m.name);
@@ -1895,6 +2061,8 @@ function renderPlannerTaskRows(){
 }
 
 async function deletePlannerEntry(id){
+  const entry=plannerEntries.find(x=>String(x.id)===String(id));
+  if(isRep() && entry?.staff_name!==currentUser.name){toast('You can only delete your own planner tasks','err');return;}
   if(!confirm('Remove this planner entry?'))return;
   try{
     await dbDelete('team_planner',id);
@@ -1904,6 +2072,8 @@ async function deletePlannerEntry(id){
 }
 
 async function togglePlannerEntry(id,completed){
+  const entry=plannerEntries.find(x=>String(x.id)===String(id));
+  if(isRep() && entry?.staff_name!==currentUser.name){toast('You can only complete your own planner tasks','err');renderPlanner();return;}
   try{
     await dbUpdate('team_planner',id,{completed});
     const e=plannerEntries.find(x=>x.id===id);
@@ -2016,8 +2186,9 @@ function buildPlannerPDF(memberFilter){
 
 function downloadPlannerPDF(){
   const ws=plannerWeekStart||getMondayOf(today());
-  const doc=buildPlannerPDF(plannerMemberFilter||null);
-  const suffix=plannerMemberFilter?`_${plannerMemberFilter.replace(/\s+/g,'_')}`:'';
+  const member=isRep()?currentUser.name:(plannerMemberFilter||null);
+  const doc=buildPlannerPDF(member);
+  const suffix=member?`_${member.replace(/\s+/g,'_')}`:'';
   doc.save(`Team_Planner_${ws}${suffix}.pdf`);
 }
 
@@ -2027,7 +2198,7 @@ function downloadPlannerPDF(){
 function openModal(mode,extra){
   modalMode=mode;targetId=extra||null;
   const title=document.getElementById('modal-title'),body=document.getElementById('modal-body'),saveBtn=document.getElementById('modal-save-btn');
-  saveBtn.style.cssText='';saveBtn.className='btn primary';saveBtn.textContent='Save';saveBtn.onclick=null;
+  saveBtn.style.cssText='';saveBtn.className='btn primary';saveBtn.textContent='Save';saveBtn.onclick=saveModal;
 
   if(mode==='newUser'){
     const roleLabels={'admin':'Add admin','rep':'Add rep','team':'Add team member'};
@@ -2146,6 +2317,7 @@ function openModal(mode,extra){
     // extra = "staffName|dayIndex|weekStart"
     const parts=(extra||'').split('|');
     const staffName=parts[0]||'';const dayIdx=parseInt(parts[1])||0;const ws=parts[2]||getMondayOf(today());
+    if(isRep() && staffName!==currentUser.name){toast('You can only add tasks to your own planner','err');closeModal();return;}
     title.textContent=`Add tasks — ${staffName} — ${DAY_NAMES[dayIdx]}`;
     saveBtn.textContent='Save all tasks';
     plannerTaskRows=[{type:'wip',jobId:'',custom:'',notes:''}];
@@ -2158,6 +2330,7 @@ function openModal(mode,extra){
     renderPlannerTaskRows();
   } else if(mode==='plannerEdit'){
     const e=plannerEntries.find(x=>x.id===extra);
+    if(isRep() && e?.staff_name!==currentUser.name){toast('You can only open your own planner tasks','err');closeModal();return;}
     const wj=wipJobs.find(j=>j.id===e?.job_id);
     title.textContent=`Edit task — ${e?.staff_name} — ${DAY_NAMES[e?.day_index||0]}`;
     const wipOpts=wipJobs.map(j=>`<option value="${j.id}"${j.id===e?.job_id?' selected':''}>[${j.status==='Job Complete'?'Complete':j.status==='Awaiting Approval'?'Awaiting':'Active'}] ${j.customer||'?'}: ${(j.nature_of_job||'').slice(0,40)}</option>`).join('');
@@ -2404,6 +2577,7 @@ async function saveModal(){
       const staffName=document.getElementById('f-planner-staff')?.value||'';
       const dayIdx=parseInt(document.getElementById('f-planner-day')?.value)||0;
       const ws=document.getElementById('f-planner-ws')?.value||getMondayOf(today());
+      if(isRep() && staffName!==currentUser.name){toast('You can only add tasks to your own planner','err');return;}
       const validRows=plannerTaskRows.filter(r=>r.type==='wip'?r.jobId:r.custom.trim());
       if(!validRows.length){toast('Add at least one task','err');return;}
       for(const r of validRows){
@@ -2413,6 +2587,7 @@ async function saveModal(){
       toast(validRows.length===1?'Task added':`${validRows.length} tasks added`);closeModal();renderPlanner();
     } else if(modalMode==='plannerEdit'){
       const e=plannerEntries.find(x=>x.id===targetId);
+      if(isRep() && e?.staff_name!==currentUser.name){toast('You can only edit your own planner tasks','err');return;}
       const type=document.getElementById('f-planner-type')?.value||'wip';
       const jobId=type==='wip'?(document.getElementById('f-planner-job')?.value||null):null;
       const customTask=type==='custom'?(document.getElementById('f-planner-custom')?.value||null):null;
@@ -2527,15 +2702,29 @@ function initPlannerDrag(){
 
 async function moveTask(srcEl,{beforeEntry,cell}){
   const entryId=String(srcEl.dataset.entryId);
-  const srcStaff=srcEl.dataset.staff,srcDay=parseInt(srcEl.dataset.day),srcWs=srcEl.dataset.ws;
+  const srcStaff=srcEl.dataset.staff,srcDay=parseInt(srcEl.dataset.day,10),srcWs=srcEl.dataset.ws;
   let tgtStaff,tgtDay,tgtWs;
-  if(beforeEntry){tgtStaff=beforeEntry.dataset.staff;tgtDay=parseInt(beforeEntry.dataset.day);tgtWs=beforeEntry.dataset.ws;}
-  else{tgtStaff=cell.dataset.staff;tgtDay=parseInt(cell.dataset.day);tgtWs=cell.dataset.ws;}
+  if(beforeEntry){tgtStaff=beforeEntry.dataset.staff;tgtDay=parseInt(beforeEntry.dataset.day,10);tgtWs=beforeEntry.dataset.ws;}
+  else{tgtStaff=cell.dataset.staff;tgtDay=parseInt(cell.dataset.day,10);tgtWs=cell.dataset.ws;}
+
+  if(!tgtStaff||Number.isNaN(tgtDay)||!tgtWs){
+    toast('Move failed — drop target is missing planner data. Please refresh and try again.','err');
+    console.error('Invalid planner drop target',{tgtStaff,tgtDay,tgtWs,cell,beforeEntry});
+    renderPlanner();
+    return;
+  }
+
+  if(isRep() && tgtStaff!==currentUser.name){
+    toast('You can only move tasks inside your own planner','err');
+    renderPlanner();
+    return;
+  }
 
   // Find entry object (do NOT mutate yet)
   const eIdx=plannerEntries.findIndex(e=>String(e.id)===entryId);
   if(eIdx<0)return;
   const entry=plannerEntries[eIdx];
+  if(isRep() && entry.staff_name!==currentUser.name){toast('You can only move your own planner tasks','err');renderPlanner();return;}
   const movingDay=tgtDay!==srcDay,movingMember=tgtStaff!==srcStaff;
 
   // ── Snapshot groups BEFORE any mutation ──────────────────────────
@@ -2606,6 +2795,8 @@ async function moveTask(srcEl,{beforeEntry,cell}){
   },0);
 }
 
+
+restoreSavedSession();
 
 </script>
 </body>
