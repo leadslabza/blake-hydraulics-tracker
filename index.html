@@ -2581,17 +2581,22 @@ async function moveTask(srcEl,{beforeEntry,cell}){
     [...others,...srcGroup,...tgtGroup].forEach(e=>plannerEntries.push(e));
   }
 
-  renderPlanner();
-
-  // ── Persist to DB only if position actually changed ───────────────
-  if(movingDay||movingMember){
-    try{await dbUpdate('team_planner',entryId,{day_index:tgtDay,staff_name:tgtStaff,week_start:tgtWs});}
-    catch(err){
-      console.error('Failed to persist task move:',err);
-      // Reload from DB to restore consistent state
-      await loadAllData();renderPlanner();
+  // Defer re-render until after the full drag sequence completes.
+  // Re-rendering inside the drop handler tears down the DOM node before
+  // dragend fires, causing a spurious click on the freshly rendered node.
+  const _movingDay=movingDay,_movingMember=movingMember,_entryId=entryId;
+  const _tgtDay=tgtDay,_tgtStaff=tgtStaff,_tgtWs=tgtWs;
+  setTimeout(async ()=>{
+    renderPlanner();
+    if(_movingDay||_movingMember){
+      try{
+        await dbUpdate('team_planner',_entryId,{day_index:_tgtDay,staff_name:_tgtStaff,week_start:_tgtWs});
+      }catch(err){
+        console.error('Failed to persist task move:',err);
+        await loadAllData();renderPlanner();
+      }
     }
-  }
+  },0);
 }
 
 
