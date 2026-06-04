@@ -1702,7 +1702,7 @@ function renderWIP(){
         h+=`<tr class="row-link" onclick="openModal('viewWIP','${j.id}')">
           <td style="white-space:nowrap;overflow:visible">
             <div style="display:flex;gap:4px">
-              ${j.status!=='Job Complete'?`<button class="icon-btn" onclick="event.stopPropagation();markWIPComplete('${j.id}')" title="Mark as Job Complete" style="color:var(--success-text);border-color:var(--success-border)"><i class="ti ti-circle-check"></i></button>`:'<button class="icon-btn" disabled title="Already complete" style="color:var(--success-text);opacity:.4"><i class="ti ti-circle-check-filled"></i></button>'}
+              ${j.status==='Jobs On The Go'?`<button class="icon-btn" onclick="event.stopPropagation();markWIPComplete('${j.id}')" title="Mark as Job Complete" style="color:var(--success-text);border-color:var(--success-border)"><i class="ti ti-circle-check"></i></button>`:j.status==='Job Complete'?`<button class="icon-btn" disabled title="Already complete" style="color:var(--success-text);opacity:.4"><i class="ti ti-circle-check-filled"></i></button>`:''}
               <button class="icon-btn" onclick="event.stopPropagation();openModal('wipEdit','${j.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
               <button class="icon-btn del" onclick="event.stopPropagation();openModal('wipDelete','${j.id}')" title="Delete"><i class="ti ti-trash"></i></button>
             </div>
